@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <fstream>
 #include <array>
+#include <math.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
