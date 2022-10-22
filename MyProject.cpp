@@ -12,7 +12,6 @@ struct UniformBufferObject {
 	alignas(16) glm::mat4 proj;
 };
 
-//Questo commento è per testare GitHub
 // MAIN ! 
 class MyProject : public BaseProject {
 	protected:
