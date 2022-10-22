@@ -75,11 +75,15 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\include;C:\Users\Alfredo Landi\source\repos\alfredolandi97\Computer-Graphics-2021-22-Calabrese-Landi\headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\lib-vc2015;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -88,6 +92,8 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\include;C:\Users\Alfredo Landi\source\repos\alfredolandi97\Computer-Graphics-2021-22-Calabrese-Landi\headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -95,6 +101,28 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\lib-vc2015;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\include;C:\Users\Alfredo Landi\source\repos\alfredolandi97\Computer-Graphics-2021-22-Calabrese-Landi\headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\lib-vc2015;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\include;C:\Users\Alfredo Landi\source\repos\alfredolandi97\Computer-Graphics-2021-22-Calabrese-Landi\headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;C:\Users\Alfredo Landi\Documents\Visual Studio 2022\Libraries\glfw-3.3.7.bin.WIN64\lib-vc2015;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
