@@ -2,8 +2,8 @@
 
 #include "MyProject.hpp"
 
-const std::string MODEL_PATH = "models/viking_room.obj";
-const std::string TEXTURE_PATH = "textures/viking_room.png";
+const std::string MODEL_PATH = "models/museumTri.obj";
+const std::string TEXTURE_PATH = "textures/wall.jpg";
 
 // The uniform buffer object used in this example
 struct UniformBufferObject {
@@ -12,6 +12,7 @@ struct UniformBufferObject {
 	alignas(16) glm::mat4 proj;
 };
 
+//Questo commento è per testare GitHub
 // MAIN ! 
 class MyProject : public BaseProject {
 	protected:
@@ -110,27 +111,92 @@ class MyProject : public BaseProject {
 		vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);
 	}
-
+	glm::mat3 CamDir = glm::mat3(1.0f);
+	glm::vec3 CamPos = glm::vec3(0.0f, 1.7f, 0.5f);
+	glm::vec3 CamAng = glm::vec3(0.0f, 0.0f, 0.0f);
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
+		
 		static auto startTime = std::chrono::high_resolution_clock::now();
+		static float lastTime = 0.0f;
+
 		auto currentTime = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>
-					(currentTime - startTime).count();
-					
-					
+			(currentTime - startTime).count();
+		float deltaT = time - lastTime;
+		lastTime = time;
+
+		const float ROT_SPEED = glm::radians(60.0f);
+		const float MOVE_SPEED = 1.25f;
+		const float MOUSE_RES = 500.0f;
+
+		static double old_xpos = 0, old_ypos = 0;
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		double m_dx = xpos - old_xpos;
+		double m_dy = ypos - old_ypos;
+		old_xpos = xpos; old_ypos = ypos;
+
+
+		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+			CamAng.y += m_dx * ROT_SPEED / MOUSE_RES;
+			CamAng.x += m_dy * ROT_SPEED / MOUSE_RES;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_LEFT)) {
+			CamAng.y += deltaT * ROT_SPEED;
+		}
+		if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
+			CamAng.y -= deltaT * ROT_SPEED;
+		}
+		if (glfwGetKey(window, GLFW_KEY_UP)) {
+			CamAng.x += deltaT * ROT_SPEED;
+		}
+		if (glfwGetKey(window, GLFW_KEY_DOWN)) {
+			CamAng.x -= deltaT * ROT_SPEED;
+		}
+		if (glfwGetKey(window, GLFW_KEY_Q)) {
+			CamAng.z -= deltaT * ROT_SPEED;
+		}
+		if (glfwGetKey(window, GLFW_KEY_E)) {
+			CamAng.z += deltaT * ROT_SPEED;
+		}
+
+		 CamDir = glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.y, glm::vec3(0.0f, 1.0f, 0.0f))) *
+			glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.x, glm::vec3(1.0f, 0.0f, 0.0f))) *
+			glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.z, glm::vec3(0.0f, 0.0f, 1.0f)));
+
+
+		if (glfwGetKey(window, GLFW_KEY_A)) {
+			CamPos -= MOVE_SPEED * glm::vec3(glm::rotate(glm::mat4(1.0f), CamAng.y,
+				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(1, 0, 0, 1)) * deltaT;
+		}
+		if (glfwGetKey(window, GLFW_KEY_D)) {
+			CamPos += MOVE_SPEED * glm::vec3(glm::rotate(glm::mat4(1.0f), CamAng.y,
+				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(1, 0, 0, 1)) * deltaT;
+		}
+		if (glfwGetKey(window, GLFW_KEY_S)) {
+			CamPos += MOVE_SPEED * glm::vec3(glm::rotate(glm::mat4(1.0f), CamAng.y,
+				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(0, 0, 1, 1)) * deltaT;
+		}
+		if (glfwGetKey(window, GLFW_KEY_W)) {
+			CamPos -= MOVE_SPEED * glm::vec3(glm::rotate(glm::mat4(1.0f), CamAng.y,
+				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(0, 0, 1, 1)) * deltaT;
+		}
+
+		glm::mat4 CamMat = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos);
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f),
-								time * glm::radians(90.0f),
-								glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
-							   glm::vec3(0.0f, 0.0f, 0.0f),
-							   glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f),
-						swapChainExtent.width / (float) swapChainExtent.height,
-						0.1f, 10.0f);
+		ubo.model = glm::mat4(1.0f); //mMat
+		ubo.view = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos); //CamMat
+							   
+		ubo.proj = glm::perspective(glm::radians(45.0f), //Prj
+			swapChainExtent.width / (float)swapChainExtent.height,
+			0.1f, 50.0f);;
 		ubo.proj[1][1] *= -1;
+
+
 		
 		void* data;
 
