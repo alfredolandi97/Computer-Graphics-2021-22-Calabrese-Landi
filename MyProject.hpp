@@ -48,6 +48,16 @@ const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+const std::vector<Model> SceneToLoad = {
+	{"floor.obj", "MapSciFi1024.png", {0,0,0}, 1, Flat},
+	{"Walls.obj", "Colors.png", {0,0,0}, 1, Flat},
+	{"Character.obj", "Colors2.png", {0,0,0}, 1, Flat},
+	{"Walls.obj", "Colors.png", {0,0,0}, 1, Wire},
+	{"pyramid.obj", "whatever.png", {0,0,0}, 0.3, Wire}
+};
+
+
+
 // Lesson 17
 struct Vertex {
 	glm::vec3 pos;
@@ -264,6 +274,13 @@ struct DescriptorSet {
 	void cleanup();
 };
 
+struct SceneModel {
+	// Model data
+	ModelData MD;
+
+	// Texture data
+	TextureData TD;
+};
 
 // MAIN ! 
 class BaseProject {
@@ -313,7 +330,6 @@ protected:
 	
 	// Lesson 19
 	VkRenderPass renderPass;
-	
  	VkDescriptorPool descriptorPool;
 
 	// Lesson 22
@@ -324,6 +340,7 @@ protected:
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
+	std::vector<SceneModel> Scene;
 
 	// L22.2 --- Frame buffers
 	std::vector<VkFramebuffer> swapChainFramebuffers;
@@ -335,6 +352,37 @@ protected:
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
 	
+	stbi_uc* stationMap;
+	int stationMapWidth, stationMapHeight;
+	bool canStepPoint(float x, float y) {
+		int pixX = round(fmax(0.0f, fmin(stationMapWidth - 1, (x + 10) * stationMapWidth / 20.0)));
+		int pixY = round(fmax(0.0f, fmin(stationMapHeight - 1, (y + 10) * stationMapHeight / 20.0)));
+		//std::cout << "pix index " << stationMapWidth * pixY + pixX << "\n";
+		int pix = (int)stationMap[stationMapWidth * pixY + pixX];
+		if (pix > 128) {
+			//std::cout << "pix: " << pix << "\n";
+			for (int i = 0; i < sizeof(stationMap); i++) {
+				//std::cout << "Numero " << i << " element : " << (float)stationMap[i] << "\n";
+			}
+		}
+		//std::cout << pixX << " " << pixY << " " << x << " " << y << " \t P = " << pix << "\n";
+
+		return pix > 128;
+	}
+	const float checkRadius = 0.1;
+	const int checkSteps = 12;
+	bool canStep(float x, float y) {
+
+		for (int i = 0; i < checkSteps; i++) {
+			if (!canStepPoint(x + cos(6.2832 * i / (float)checkSteps) * checkRadius,
+				y + sin(6.2832 * i / (float)checkSteps) * checkRadius)) {
+
+				return false;
+			}
+		}
+		return true;
+	}
+
 	// Lesson 12
     void initWindow() {
         glfwInit();
@@ -360,6 +408,7 @@ protected:
 		createCommandPool();			// L13
 		createDepthResources();			// L22.1
 		createFramebuffers();			// L22.2
+		loadModels();					
 		createDescriptorPool();			// L21
 
 		localInit();
@@ -1639,6 +1688,33 @@ void Texture::createTextureSampler() {
 	 	PrintVkError(result);
 	 	throw std::runtime_error("failed to create texture sampler!");
 	}
+}
+
+void loadModels() {
+	Scene.resize(SceneToLoad.size());
+	int i = 0;
+
+	for (const auto& M : SceneToLoad) {
+		loadModelWithTexture(M, i);
+		i++;
+	}
+
+	loadSkyBox();
+	createTexts();
+
+
+	stationMap = stbi_load((TEXTURE_PATH + "MapSciFiStep.png").c_str(),
+		&stationMapWidth, &stationMapHeight,
+		NULL, 1);
+	// std::cout << "Station map width : " << stationMapWidth << ", Station map height : " << stationMapHeight;
+
+	if (!stationMap) {
+		std::cout << (TEXTURE_PATH + "MapSciFiStep.png").c_str() << "\n";
+		throw std::runtime_error("failed to load map image!");
+	}
+	std::cout << "Station map -> size: " << stationMapWidth
+		<< "x" << stationMapHeight << "\n";
+	//throw std::runtime_error("Now We Stop Here!");			
 }
 	
 
