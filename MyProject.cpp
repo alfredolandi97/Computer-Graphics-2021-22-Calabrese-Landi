@@ -62,6 +62,7 @@ class MyProject : public BaseProject {
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		M1.init(this, MODEL_PATH);
+		loadModels();
 		T1.init(this, TEXTURE_PATH);
 		DS1.init(this, &DSL1, {
 		// the second parameter, is a pointer to the Uniform Set Layout of this set
@@ -168,6 +169,7 @@ class MyProject : public BaseProject {
 			glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.x, glm::vec3(1.0f, 0.0f, 0.0f))) *
 			glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.z, glm::vec3(0.0f, 0.0f, 1.0f)));
 
+		glm::vec3 oldCamPos = CamPos;
 
 		if (glfwGetKey(window, GLFW_KEY_A)) {
 			CamPos -= MOVE_SPEED * glm::vec3(glm::rotate(glm::mat4(1.0f), CamAng.y,
@@ -184,6 +186,10 @@ class MyProject : public BaseProject {
 		if (glfwGetKey(window, GLFW_KEY_W)) {
 			CamPos -= MOVE_SPEED * glm::vec3(glm::rotate(glm::mat4(1.0f), CamAng.y,
 				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(0, 0, 1, 1)) * deltaT;
+		}
+
+		if (!canStep(CamPos.x, CamPos.z)) {
+			CamPos = oldCamPos;
 		}
 
 		glm::mat4 CamMat = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos);
