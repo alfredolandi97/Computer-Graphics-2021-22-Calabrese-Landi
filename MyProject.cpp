@@ -3,13 +3,24 @@
 #include "MyProject.hpp"
 
 const std::string MODEL_PATH = "models/museumTri.obj";
-const std::string TEXTURE_PATH = "textures/wall.jpg";
+const std::string TEXTURE_PATH = "textures/walls.jpg";
+const std::string MODEL_PATH1 = "models/quadro.obj";
+const std::string TEXTURE_PATH1 = "textures/Monet-Sunrise.jpg";
+const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
+const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
+const std::string MODEL_PATHFLOOR = "models/Floor.obj";
+const std::string TEXTURE_PATHFLOOR = "textures/floor.png";
 
 // The uniform buffer object used in this example
-struct UniformBufferObject {
-	alignas(16) glm::mat4 model;
+struct globalUniformBufferObject {
+	
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
+	
+};
+
+struct UniformBufferObject {
+	alignas(16) glm::mat4 model;
 };
 
 //Questo commento è per testare GitHub
@@ -19,15 +30,33 @@ class MyProject : public BaseProject {
 	// Here you list all the Vulkan objects you need:
 	
 	// Descriptor Layouts [what will be passed to the shaders]
-	DescriptorSetLayout DSL1;
-
+	DescriptorSetLayout DSLGlobal;
+	DescriptorSetLayout DSLObj;
+	DescriptorSet DSGlobal;
 	// Pipelines [Shader couples]
 	Pipeline P1;
+	
+
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	Model M1;
 	Texture T1;
-	DescriptorSet DS1;
+	DescriptorSet DS1; //instance DSLobj
+	
+	
+	Model M2;
+	Texture T2;
+	DescriptorSet DS2; //instance DSLobj
+	//per ogni quadro dobbiamo aggiungere un descriptor set e siccome cambia la texture anche la texture
+	
+
+	Model MTerrain;
+	Texture TTerrain;
+	DescriptorSet DSTerrain;
+
+	Model MFloor;
+	Texture TFloor;
+	DescriptorSet DSFloor;
 	
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -35,54 +64,102 @@ class MyProject : public BaseProject {
 		windowWidth = 800;
 		windowHeight = 600;
 		windowTitle = "My Project";
-		initialBackgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 1;
-		texturesInPool = 1;
-		setsInPool = 1;
+		uniformBlocksInPool = 5;
+		texturesInPool = 4;
+		setsInPool = 5;
 	}
 	
 	// Here you load and setup all your Vulkan objects
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
-		DSL1.init(this, {
-					// this array contains the binding:
-					// first  element : the binding number
-					// second element : the time of element (buffer or texture)
-					// third  element : the pipeline stage where it will be used
-					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
-					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-				  });
+		
+		DSLObj.init(this, {
+			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
+			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			});
 
-		// Pipelines [Shader couples]
-		// The last array, is a vector of pointer to the layouts of the sets that will
-		// be used in this pipeline. The first element will be set 0, and so on..
-		P1.init(this, "shaders/vert.spv", "shaders/frag.spv", {&DSL1});
+		DSLGlobal.init(this, {
+			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+			});
 
+		P1.init(this, "shaders/vert.spv", "shaders/frag.spv", {&DSLGlobal, &DSLObj});
+		loadModels();
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		M1.init(this, MODEL_PATH);
-		loadModels();
 		T1.init(this, TEXTURE_PATH);
-		DS1.init(this, &DSL1, {
-		// the second parameter, is a pointer to the Uniform Set Layout of this set
-		// the last parameter is an array, with one element per binding of the set.
-		// first  elmenet : the binding number
-		// second element : UNIFORM or TEXTURE (an enum) depending on the type
-		// third  element : only for UNIFORMs, the size of the corresponding C++ object
-		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object
+		DS1.init(this, &DSLObj, {
+		
 					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 					{1, TEXTURE, 0, &T1}
 				});
+
+		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
+		M2.init(this, MODEL_PATH1);
+		T2.init(this, TEXTURE_PATH1);
+		
+		DS2.init(this, &DSLObj, {
+						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+						{1, TEXTURE, 0, &T2}
+			});
+
+		//Terrain
+		MTerrain.init(this, MODEL_PATHTERRAIN);
+		TTerrain.init(this, TEXTURE_PATHTERRAIN);
+		DSTerrain.init(this, &DSLObj, {
+
+					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+					{1, TEXTURE, 0, &TTerrain}
+			});
+		
+		MFloor.init(this, MODEL_PATHFLOOR);
+		TFloor .init(this, TEXTURE_PATHFLOOR);
+		DSFloor .init(this, &DSLObj, {
+						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+						{1, TEXTURE, 0, &TFloor}
+			});
+
+
+		/*
+		M2.init(this, MODEL_PATH1);
+		T***.init(this, TEXTURE_PATH1);
+		DS***.init(this, &DSLObj, {
+						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+						{1, TEXTURE, 0, &T***}
+			});
+			*/
+
+		DSGlobal.init(this, &DSLGlobal, {
+					{0, UNIFORM, sizeof(globalUniformBufferObject), nullptr}
+			});
 	}
 
 	// Here you destroy all the objects you created!		
 	void localCleanup() {
+		P1.cleanup();
+		DSLGlobal.cleanup();
+		DSLObj.cleanup();
+
 		DS1.cleanup();
 		T1.cleanup();
 		M1.cleanup();
-		P1.cleanup();
-		DSL1.cleanup();
+
+		DS2.cleanup();
+		T2.cleanup();
+		M2.cleanup();
+
+		DSTerrain.cleanup();
+		TTerrain.cleanup();
+		MTerrain.cleanup();
+
+		DSFloor.cleanup();
+		TFloor.cleanup();
+		MFloor.cleanup();
+		
+		
+		
 	}
 	
 	// Here it is the creation of the command buffer:
@@ -90,34 +167,90 @@ class MyProject : public BaseProject {
 	// with their buffers and textures
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 				
+		//VIEW
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 				P1.graphicsPipeline);
-				
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 0, 1, &DSGlobal.descriptorSets[currentImage],
+			0, nullptr);
+
+		//MUSEO
 		VkBuffer vertexBuffers[] = {M1.vertexBuffer};
-		// property .vertexBuffer of models, contains the VkBuffer handle to its vertex buffer
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		// property .indexBuffer of models, contains the VkBuffer handle to its index buffer
 		vkCmdBindIndexBuffer(commandBuffer, M1.indexBuffer, 0,
 								VK_INDEX_TYPE_UINT32);
-
-		// property .pipelineLayout of a pipeline contains its layout.
-		// property .descriptorSets of a descriptor set contains its elements.
 		vkCmdBindDescriptorSets(commandBuffer,
 						VK_PIPELINE_BIND_POINT_GRAPHICS,
-						P1.pipelineLayout, 0, 1, &DS1.descriptorSets[currentImage],
-						0, nullptr);
-						
-		// property .indices.size() of models, contains the number of triangles * 3 of the mesh.
+						P1.pipelineLayout, 1, 1, &DS1.descriptorSets[currentImage],
+						0, nullptr);		
 		vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);
+
+
+		//QUADRO 
+		VkBuffer vertexBuffers2[] = { M2.vertexBuffer };
+		VkDeviceSize offsets2[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
+		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DS2.descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+
+		//TERRAIN
+
+		VkBuffer vertexBuffers3[] = { MTerrain.vertexBuffer };
+		VkDeviceSize offsets3[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers3, offsets3);
+		vkCmdBindIndexBuffer(commandBuffer, MTerrain.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DSTerrain.descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MTerrain.indices.size()), 1, 0, 0, 0);
+
+		//FLOOR
+		VkBuffer vertexBuffers4[] = { MFloor.vertexBuffer };
+		VkDeviceSize offsets4[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers4, offsets4);
+		vkCmdBindIndexBuffer(commandBuffer, MFloor.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DSFloor.descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MFloor.indices.size()), 1, 0, 0, 0);
+		
+
+		/*
+		VkBuffer vertexBuffers***[] = { M2.vertexBuffer };
+		VkDeviceSize offsets***[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers***, offsets***);
+		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DS***.descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+		*/
 	}
 	glm::mat3 CamDir = glm::mat3(1.0f);
-	glm::vec3 CamPos = glm::vec3(0.0f, 1.7f, 0.5f);
+	glm::vec3 CamPos = glm::vec3(-2.5f, 1.7f, 0.5f);
 	glm::vec3 CamAng = glm::vec3(0.0f, 0.0f, 0.0f);
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
+		
 		
 		static auto startTime = std::chrono::high_resolution_clock::now();
 		static float lastTime = 0.0f;
@@ -138,7 +271,7 @@ class MyProject : public BaseProject {
 		double m_dx = xpos - old_xpos;
 		double m_dy = ypos - old_ypos;
 		old_xpos = xpos; old_ypos = ypos;
-
+		
 
 		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
@@ -192,25 +325,51 @@ class MyProject : public BaseProject {
 			CamPos = oldCamPos;
 		}
 
+		void* data;
 		glm::mat4 CamMat = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos);
 		UniformBufferObject ubo{};
-		ubo.model = glm::mat4(1.0f); //mMat
-		ubo.view = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos); //CamMat
-							   
-		ubo.proj = glm::perspective(glm::radians(45.0f), //Prj
+		globalUniformBufferObject gubo{};
+		gubo.view = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos); //CamMat
+		gubo.proj = glm::perspective(glm::radians(45.0f), //Prj
 			swapChainExtent.width / (float)swapChainExtent.height,
 			0.1f, 50.0f);;
-		ubo.proj[1][1] *= -1;
+		gubo.proj[1][1] *= -1;
 
-
+		vkMapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage], 0,
+			sizeof(gubo), 0, &data);
+		memcpy(data, &gubo, sizeof(gubo));
+		vkUnmapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage]);
 		
-		void* data;
+		//MUSEO
 
-		// Here is where you actually update your uniforms
+		ubo.model = glm::mat4(1.0f); 
 		vkMapMemory(device, DS1.uniformBuffersMemory[0][currentImage], 0,
 							sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DS1.uniformBuffersMemory[0][currentImage]);
+
+		//QUADRI * N
+		
+		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 1.7f, 0.0f))) * glm::scale(ubo.model, glm::vec3(0.4, 0.4, 0.4));
+		vkMapMemory(device, DS2.uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DS2.uniformBuffersMemory[0][currentImage]);
+
+		//TERRAIN
+
+		ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.9f, 0.0f));
+		vkMapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage]);
+
+		//FLOOR
+		ubo.model = glm::mat4(1.0f);
+		vkMapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
 	}	
 };
 

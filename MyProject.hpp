@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <fstream>
 #include <array>
+#include <array>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -52,21 +53,6 @@ const std::vector<const char*> deviceExtensions = {
 const std::string STATIONMAP_PATH = "textures/stationMap.png";
 enum PipelineType { Flat, Wire };
 
-/*struct Model {
-	const char* ObjFile;
-	const char* TextureFile;
-	const glm::vec3 pos;
-	const float scale;
-	const PipelineType pt;
-};*/
-
-/*const std::vector<Model> SceneToLoad = {
-	{"floor.obj", "MapSciFi1024.png", {0,0,0}, 1, Flat},
-	{"Walls.obj", "Colors.png", {0,0,0}, 1, Flat},
-	{"Character.obj", "Colors2.png", {0,0,0}, 1, Flat},
-	{"Walls.obj", "Colors.png", {0,0,0}, 1, Wire},
-	{"pyramid.obj", "whatever.png", {0,0,0}, 0.3, Wire}
-};*/
 
 
 
@@ -563,7 +549,7 @@ protected:
 		stationMap = stbi_load((STATIONMAP_PATH).c_str(),
 			&stationMapWidth, &stationMapHeight,
 			NULL, 1);
-		// std::cout << "Station map width : " << stationMapWidth << ", Station map height : " << stationMapHeight;
+		 std::cout << "Station map width : " << stationMapWidth << ", Station map height : " << stationMapHeight;
 
 		if (!stationMap) {
 			std::cout << (STATIONMAP_PATH).c_str() << "\n";
@@ -1889,6 +1875,8 @@ void Texture::createTextureSampler() {
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
 	samplerInfo.minFilter = VK_FILTER_LINEAR;
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	//samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	//samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.anisotropyEnable = VK_TRUE;
