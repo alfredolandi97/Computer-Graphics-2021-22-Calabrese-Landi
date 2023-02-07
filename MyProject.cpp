@@ -5,7 +5,7 @@
 const std::string MODEL_PATH = "models/museumTri22.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro2.obj";
-const std::string TEXTURE_PATH1 = "textures/cezan.jpg";
+const std::string texture_path[] = {"textures/cezan.jpg"};
 const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
@@ -46,8 +46,9 @@ class MyProject : public BaseProject {
 	
 	
 	Model M2;
-	Texture T2;
-	DescriptorSet DS2; //instance DSLobj
+	//L'inizializzazione statica DEVE ESSERE CORRETTA, SI DEVE USARE QUELLA DINAMICA
+	Texture TPicture[1];
+	DescriptorSet DSPicture[1]; //instance DSLobj
 	//per ogni quadro dobbiamo aggiungere un descriptor set e siccome cambia la texture anche la texture
 	
 
@@ -102,12 +103,13 @@ class MyProject : public BaseProject {
 
 		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
 		M2.init(this, MODEL_PATH1);
-		T2.init(this, TEXTURE_PATH1);
-		
-		DS2.init(this, &DSLObj, {
+		for (int i = 0; i < 1; i++) {
+			TPicture[i].init(this, texture_path[i]);
+			DSPicture[i].init(this, &DSLObj, {
 						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-						{1, TEXTURE, 0, &T2}
-			});
+						{1, TEXTURE, 0, &TPicture[i]}
+				});
+		}
 
 		//Terrain
 		MTerrain.init(this, MODEL_PATHTERRAIN);
@@ -133,16 +135,6 @@ class MyProject : public BaseProject {
 						{1, TEXTURE, 0, &TDesc}
 			});
 
-
-		/*
-		M2.init(this, MODEL_PATH1);
-		T***.init(this, TEXTURE_PATH1);
-		DS***.init(this, &DSLObj, {
-						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-						{1, TEXTURE, 0, &T***}
-			});
-			*/
-
 		DSGlobal.init(this, &DSLGlobal, {
 					{0, UNIFORM, sizeof(globalUniformBufferObject), nullptr}
 			});
@@ -158,8 +150,10 @@ class MyProject : public BaseProject {
 		T1.cleanup();
 		M1.cleanup();
 
-		DS2.cleanup();
-		T2.cleanup();
+		for (int i = 0; i < 1; i++) {
+			TPicture[i].cleanup();
+			DSPicture[i].cleanup();
+		}
 		M2.cleanup();
 
 		DSTerrain.cleanup();
@@ -211,12 +205,14 @@ class MyProject : public BaseProject {
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
 			vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
 				VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				P1.pipelineLayout, 1, 1, &DS2.descriptorSets[currentImage],
-				0, nullptr);
-			vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+			for (int i = 0; i < 1; i++) {
+				vkCmdBindDescriptorSets(commandBuffer,
+					VK_PIPELINE_BIND_POINT_GRAPHICS,
+					P1.pipelineLayout, 1, 1, &DSPicture[i].descriptorSets[currentImage],
+					0, nullptr);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+			}
 		
 		//TERRAIN
 
@@ -381,13 +377,14 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DS1.uniformBuffersMemory[0][currentImage]);
 
 		//QUADRI * N
+		for (int i = 0; i < 1; i++) {
+			ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.8f)) * glm::scale(ubo.model, glm::vec3(0.4, 0.4, 0.05)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
+				sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vkUnmapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage]);
+		}
 		
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.8f)) * glm::scale(ubo.model, glm::vec3(0.4, 0.4, 0.05)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0,1,0)));
-		vkMapMemory(device, DS2.uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DS2.uniformBuffersMemory[0][currentImage]);
-
 		//TERRAIN
 
 		ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.9f, 0.0f));
