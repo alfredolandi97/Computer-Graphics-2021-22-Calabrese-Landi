@@ -2,14 +2,15 @@
 
 #include "MyProject.hpp"
 
-const std::string MODEL_PATH = "models/museumTri.obj";
+const std::string MODEL_PATH = "models/museumTri22.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
-const std::string MODEL_PATH1 = "models/quadro.obj";
-const std::string TEXTURE_PATH1 = "textures/Monet-Sunrise.jpg";
+const std::string MODEL_PATH1 = "models/quadro2.obj";
+const std::string TEXTURE_PATH1 = "textures/cezan.jpg";
 const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
 const std::string TEXTURE_PATHFLOOR = "textures/floor.png";
+const std::string TEXTURE_PATHDESC = "textures/cez.png";
 
 // The uniform buffer object used in this example
 struct globalUniformBufferObject {
@@ -57,6 +58,9 @@ class MyProject : public BaseProject {
 	Model MFloor;
 	Texture TFloor;
 	DescriptorSet DSFloor;
+
+	Texture TDesc;
+	DescriptorSet DSDesc;
 	
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -67,9 +71,9 @@ class MyProject : public BaseProject {
 		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 5;
-		texturesInPool = 4;
-		setsInPool = 5;
+		uniformBlocksInPool = 6;
+		texturesInPool = 5;
+		setsInPool = 6;
 	}
 	
 	// Here you load and setup all your Vulkan objects
@@ -114,11 +118,19 @@ class MyProject : public BaseProject {
 					{1, TEXTURE, 0, &TTerrain}
 			});
 		
+		//FLOOR
 		MFloor.init(this, MODEL_PATHFLOOR);
-		TFloor .init(this, TEXTURE_PATHFLOOR);
-		DSFloor .init(this, &DSLObj, {
+		TFloor.init(this, TEXTURE_PATHFLOOR);
+		DSFloor.init(this, &DSLObj, {
 						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 						{1, TEXTURE, 0, &TFloor}
+			});
+
+		//DESCRIPTION
+		TDesc.init(this, TEXTURE_PATHDESC);
+		DSDesc.init(this, &DSLObj, {
+						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+						{1, TEXTURE, 0, &TDesc}
 			});
 
 
@@ -157,6 +169,9 @@ class MyProject : public BaseProject {
 		DSFloor.cleanup();
 		TFloor.cleanup();
 		MFloor.cleanup();
+
+		DSDesc.cleanup();
+		TDesc.cleanup();
 		
 		
 		
@@ -190,18 +205,19 @@ class MyProject : public BaseProject {
 
 
 		//QUADRO 
-		VkBuffer vertexBuffers2[] = { M2.vertexBuffer };
-		VkDeviceSize offsets2[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
-		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
-			VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			P1.pipelineLayout, 1, 1, &DS2.descriptorSets[currentImage],
-			0, nullptr);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
-
+		
+			VkBuffer vertexBuffers2[] = { M2.vertexBuffer };
+			VkDeviceSize offsets2[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
+			vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
+				VK_INDEX_TYPE_UINT32);
+			vkCmdBindDescriptorSets(commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				P1.pipelineLayout, 1, 1, &DS2.descriptorSets[currentImage],
+				0, nullptr);
+			vkCmdDrawIndexed(commandBuffer,
+				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+		
 		//TERRAIN
 
 		VkBuffer vertexBuffers3[] = { MTerrain.vertexBuffer };
@@ -229,7 +245,18 @@ class MyProject : public BaseProject {
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MFloor.indices.size()), 1, 0, 0, 0);
 		
-
+		//DESCRIPTION
+		VkBuffer vertexBuffers5 [] = { M2.vertexBuffer };
+		VkDeviceSize offsets5 [] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers5, offsets5);
+		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DSDesc.descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
 		/*
 		VkBuffer vertexBuffers***[] = { M2.vertexBuffer };
 		VkDeviceSize offsets***[] = { 0 };
@@ -251,6 +278,7 @@ class MyProject : public BaseProject {
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
 		
+		 int visible = 0;
 		
 		static auto startTime = std::chrono::high_resolution_clock::now();
 		static float lastTime = 0.0f;
@@ -271,7 +299,7 @@ class MyProject : public BaseProject {
 		double m_dx = xpos - old_xpos;
 		double m_dy = ypos - old_ypos;
 		old_xpos = xpos; old_ypos = ypos;
-		
+		const float angq = glm::radians(90.0f);
 
 		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
@@ -296,6 +324,10 @@ class MyProject : public BaseProject {
 		}
 		if (glfwGetKey(window, GLFW_KEY_E)) {
 			CamAng.z += deltaT * ROT_SPEED;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_U)) {
+			visible = 1;
 		}
 
 		 CamDir = glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.y, glm::vec3(0.0f, 1.0f, 0.0f))) *
@@ -350,7 +382,7 @@ class MyProject : public BaseProject {
 
 		//QUADRI * N
 		
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 1.7f, 0.0f))) * glm::scale(ubo.model, glm::vec3(0.4, 0.4, 0.4));
+		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.8f)) * glm::scale(ubo.model, glm::vec3(0.4, 0.4, 0.05)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0,1,0)));
 		vkMapMemory(device, DS2.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
@@ -370,6 +402,13 @@ class MyProject : public BaseProject {
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
+
+		//DESC
+		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc.uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc.uniformBuffersMemory[0][currentImage]);
 	}	
 };
 
