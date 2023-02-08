@@ -5,12 +5,14 @@
 const std::string MODEL_PATH = "models/museumTri22.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro2.obj";
-const std::string texture_path[] = {"textures/cezan.jpg"};
+const std::string texture_path[] = {"textures/cezan.jpg", "textures/caravaggio.jpg", "textures/botticelli.jpg", "textures/david.jpg", "textures/vangogh.jpg", "textures/cole.jpg", "textures/dalì.jpg", "textures/monet.jpg" };
 const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
 const std::string TEXTURE_PATHFLOOR = "textures/floor.png";
 const std::string TEXTURE_PATHDESC = "textures/cez.png";
+
+const int num = 8;
 
 // The uniform buffer object used in this example
 struct globalUniformBufferObject {
@@ -47,8 +49,8 @@ class MyProject : public BaseProject {
 	
 	Model M2;
 	//L'inizializzazione statica DEVE ESSERE CORRETTA, SI DEVE USARE QUELLA DINAMICA
-	Texture TPicture[1];
-	DescriptorSet DSPicture[1]; //instance DSLobj
+	Texture TPicture[num];
+	DescriptorSet DSPicture[num]; //instance DSLobj
 	//per ogni quadro dobbiamo aggiungere un descriptor set e siccome cambia la texture anche la texture
 	
 
@@ -72,9 +74,9 @@ class MyProject : public BaseProject {
 		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 6;
-		texturesInPool = 5;
-		setsInPool = 6;
+		uniformBlocksInPool = 5 + num;
+		texturesInPool = 4 + num;
+		setsInPool = 5 + num;
 	}
 	
 	// Here you load and setup all your Vulkan objects
@@ -103,7 +105,7 @@ class MyProject : public BaseProject {
 
 		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
 		M2.init(this, MODEL_PATH1);
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < num; i++) {
 			TPicture[i].init(this, texture_path[i]);
 			DSPicture[i].init(this, &DSLObj, {
 						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
@@ -150,7 +152,7 @@ class MyProject : public BaseProject {
 		T1.cleanup();
 		M1.cleanup();
 
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < num; i++) {
 			TPicture[i].cleanup();
 			DSPicture[i].cleanup();
 		}
@@ -205,7 +207,8 @@ class MyProject : public BaseProject {
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
 			vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
 				VK_INDEX_TYPE_UINT32);
-			for (int i = 0; i < 1; i++) {
+			for (int i = 0; i < num; i++) {
+				
 				vkCmdBindDescriptorSets(commandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
 					P1.pipelineLayout, 1, 1, &DSPicture[i].descriptorSets[currentImage],
@@ -213,6 +216,28 @@ class MyProject : public BaseProject {
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
 			}
+		/*
+		VkBuffer vertexBuffers2[] = { M2.vertexBuffer };
+		VkDeviceSize offsets2[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
+		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		
+		vkCmdBindDescriptorSets(commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		P1.pipelineLayout, 1, 1, &DSPicture[0].descriptorSets[currentImage],
+				0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+
+
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DSPicture[1].descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+		*/
 		
 		//TERRAIN
 
@@ -368,6 +393,9 @@ class MyProject : public BaseProject {
 		memcpy(data, &gubo, sizeof(gubo));
 		vkUnmapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage]);
 		
+
+		
+
 		//MUSEO
 
 		ubo.model = glm::mat4(1.0f); 
@@ -377,13 +405,95 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DS1.uniformBuffersMemory[0][currentImage]);
 
 		//QUADRI * N
-		for (int i = 0; i < 1; i++) {
-			ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.8f)) * glm::scale(ubo.model, glm::vec3(0.4, 0.4, 0.05)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
-				sizeof(ubo), 0, &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vkUnmapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage]);
-		}
+		//quadri a destra
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, -0.5f)));
+		
+
+		vkMapMemory(device, DSPicture[0].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[0].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 4.5f)));
+
+		vkMapMemory(device, DSPicture[1].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[1].uniformBuffersMemory[0][currentImage]);
+
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 9.5f)));
+
+		vkMapMemory(device, DSPicture[2].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[2].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 14.5f)));
+
+		vkMapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 14.5f)));
+
+		vkMapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage]);
+
+		//quadri a sinistra
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, 0.5f)));
+
+		vkMapMemory(device, DSPicture[4].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[4].uniformBuffersMemory[0][currentImage]);
+
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -4.5f)));
+
+		vkMapMemory(device, DSPicture[5].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[5].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -9.5f)));
+
+		vkMapMemory(device, DSPicture[6].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[6].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
+			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -14.5f)));
+
+		vkMapMemory(device, DSPicture[7].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSPicture[7].uniformBuffersMemory[0][currentImage]);
+
+		
+
+		
 		
 		//TERRAIN
 
