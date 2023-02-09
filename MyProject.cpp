@@ -10,9 +10,10 @@ const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
 const std::string TEXTURE_PATHFLOOR = "textures/floor.png";
-const std::string TEXTURE_PATHDESC = "textures/cez.png";
+const std::string texture_desc[] = { "textures/cez.png", "textures/cardesc.png", "textures/bottdesc.png", "textures/oratdesc.png", "textures/vgdesc.png", "textures/tcdesc.png", "textures/dalidesc.png", "textures/mondesc.png" };
 
 const int num = 8;
+const int numd = 8;
 
 // The uniform buffer object used in this example
 struct globalUniformBufferObject {
@@ -62,8 +63,8 @@ class MyProject : public BaseProject {
 	Texture TFloor;
 	DescriptorSet DSFloor;
 
-	Texture TDesc;
-	DescriptorSet DSDesc;
+	Texture TDesc[numd];
+	DescriptorSet DSDesc[numd];
 	
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -74,9 +75,9 @@ class MyProject : public BaseProject {
 		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 5 + num;
-		texturesInPool = 4 + num;
-		setsInPool = 5 + num;
+		uniformBlocksInPool = 4+ numd + num;
+		texturesInPool = 3+ numd + num;
+		setsInPool = 4+ numd + num;
 	}
 	
 	// Here you load and setup all your Vulkan objects
@@ -131,11 +132,15 @@ class MyProject : public BaseProject {
 			});
 
 		//DESCRIPTION
-		TDesc.init(this, TEXTURE_PATHDESC);
-		DSDesc.init(this, &DSLObj, {
+
+		for (int i = 0; i < numd; i++) {
+			TDesc[i].init(this, texture_desc[i]);
+			DSDesc[i].init(this, &DSLObj, {
 						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-						{1, TEXTURE, 0, &TDesc}
-			});
+						{1, TEXTURE, 0, &TDesc[i]}
+				});
+		}
+		
 
 		DSGlobal.init(this, &DSLGlobal, {
 					{0, UNIFORM, sizeof(globalUniformBufferObject), nullptr}
@@ -165,9 +170,11 @@ class MyProject : public BaseProject {
 		DSFloor.cleanup();
 		TFloor.cleanup();
 		MFloor.cleanup();
-
-		DSDesc.cleanup();
-		TDesc.cleanup();
+		for (int i = 0; i < numd; i++) {
+			DSDesc[i].cleanup();
+			TDesc[i].cleanup();
+		}
+		
 		
 		
 		
@@ -267,30 +274,20 @@ class MyProject : public BaseProject {
 			static_cast<uint32_t>(MFloor.indices.size()), 1, 0, 0, 0);
 		
 		//DESCRIPTION
-		VkBuffer vertexBuffers5 [] = { M2.vertexBuffer };
-		VkDeviceSize offsets5 [] = { 0 };
+		VkBuffer vertexBuffers5[] = { M2.vertexBuffer };
+		VkDeviceSize offsets5[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers5, offsets5);
 		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
 			VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			P1.pipelineLayout, 1, 1, &DSDesc.descriptorSets[currentImage],
-			0, nullptr);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
-		/*
-		VkBuffer vertexBuffers***[] = { M2.vertexBuffer };
-		VkDeviceSize offsets***[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers***, offsets***);
-		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
-			VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			P1.pipelineLayout, 1, 1, &DS***.descriptorSets[currentImage],
-			0, nullptr);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
-		*/
+		for (int i = 0; i < numd; i++) {
+
+			vkCmdBindDescriptorSets(commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				P1.pipelineLayout, 1, 1, &DSDesc[i].descriptorSets[currentImage],
+				0, nullptr);
+			vkCmdDrawIndexed(commandBuffer,
+				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
+		}
 	}
 	glm::mat3 CamDir = glm::mat3(1.0f);
 	glm::vec3 CamPos = glm::vec3(-2.5f, 1.7f, 0.5f);
@@ -320,8 +317,8 @@ class MyProject : public BaseProject {
 		double m_dx = xpos - old_xpos;
 		double m_dy = ypos - old_ypos;
 		old_xpos = xpos; old_ypos = ypos;
-		const float angq = glm::radians(90.0f);
-
+		const float angqd = glm::radians(270.0f);
+		const float angqs = glm::radians(90.0f);
 		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 			CamAng.y += m_dx * ROT_SPEED / MOUSE_RES;
@@ -407,9 +404,8 @@ class MyProject : public BaseProject {
 		//QUADRI * N
 		//quadri a destra
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, -0.5f)));
-		
 
 		vkMapMemory(device, DSPicture[0].uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -417,7 +413,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSPicture[0].uniformBuffersMemory[0][currentImage]);
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 4.5f)));
 
 		vkMapMemory(device, DSPicture[1].uniformBuffersMemory[0][currentImage], 0,
@@ -427,7 +423,7 @@ class MyProject : public BaseProject {
 
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 9.5f)));
 
 		vkMapMemory(device, DSPicture[2].uniformBuffersMemory[0][currentImage], 0,
@@ -436,7 +432,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSPicture[2].uniformBuffersMemory[0][currentImage]);
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 14.5f)));
 
 		vkMapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage], 0,
@@ -445,7 +441,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage]);
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, 14.5f)));
 
 		vkMapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage], 0,
@@ -455,7 +451,7 @@ class MyProject : public BaseProject {
 
 		//quadri a sinistra
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, 0.5f)));
 
 		vkMapMemory(device, DSPicture[4].uniformBuffersMemory[0][currentImage], 0,
@@ -465,7 +461,7 @@ class MyProject : public BaseProject {
 
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -4.5f)));
 
 		vkMapMemory(device, DSPicture[5].uniformBuffersMemory[0][currentImage], 0,
@@ -474,7 +470,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSPicture[5].uniformBuffersMemory[0][currentImage]);
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -9.5f)));
 
 		vkMapMemory(device, DSPicture[6].uniformBuffersMemory[0][currentImage], 0,
@@ -483,7 +479,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSPicture[6].uniformBuffersMemory[0][currentImage]);
 
 		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), angq, glm::vec3(0, 1, 0)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
 			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -14.5f)));
 
 		vkMapMemory(device, DSPicture[7].uniformBuffersMemory[0][currentImage], 0,
@@ -510,12 +506,80 @@ class MyProject : public BaseProject {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
 
-		//DESC
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc.uniformBuffersMemory[0][currentImage], 0,
+		//DESC DESTRA
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 *visible, 0.4 * visible , 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, -0.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc.uniformBuffersMemory[0][currentImage]);
+		vkUnmapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage]);
+
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, 4.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[1].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[1].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, 9.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[2].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[2].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-60.0f, 4.7f, 14.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[3].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[3].uniformBuffersMemory[0][currentImage]);
+
+		//DESC A SIN
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-260.0f, 4.7f, 0.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[4].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[4].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-260.0f, 4.7f, -4.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[5].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[5].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-260.0f, 4.7f, -9.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[6].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[6].uniformBuffersMemory[0][currentImage]);
+
+		ubo.model = (glm::scale(glm::mat4(1.0f), glm::vec3(0.4 * visible, 0.4 * visible, 0.01 * visible)) *
+			glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-260.0f, 4.7f, -14.5f)));
+		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
+		vkMapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage]);
 	}	
 };
 
