@@ -1,10 +1,13 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "MyProject.hpp"
+using namespace std;
+#include "Coordinate.cpp"
 
 const std::string MODEL_PATH = "models/museumTri22.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro3.obj";
+int numPictures = 8;
 const std::string texture_path[] = {"textures/cezan.jpg", "textures/caravaggio.jpg", "textures/botticelli.jpg", "textures/david.jpg", "textures/vangogh.jpg", "textures/cole.jpg", "textures/dalì.jpg", "textures/monet.jpg" };
 const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
@@ -178,6 +181,58 @@ class MyProject : public BaseProject {
 		
 		
 		
+	}
+
+	FILE* loadFile(const char* filename) {
+		FILE* fpin;
+		fopen_s(&fpin, filename, "r");
+		if (!fpin) {
+			cout << "Errore, impossibile aprire il file: "<<filename << endl;
+			exit(0);
+		}
+
+		return fpin;
+
+	}
+
+	vector<Coordinate> loadCoordinates() {
+		vector<Coordinate> Coordinates(numPictures);
+		/*FILE* fp = loadFile("resources\\Coordinates.txt");
+		char readBuffer[10];
+		float tempCoordinate[3];
+		int j =0, count = 0;
+		vector<Coordinate> Coordinates(numPictures);
+		while (!feof(fp)) {
+			fgets(readBuffer, 10, fp);
+			if (count % 3 != 0 || count == 0) {
+				tempCoordinate[count] = stof(readBuffer);
+				count++;
+			}
+			else if (count % 3 == 0 && count!=0) {
+				Coordinates[j] = Coordinate(tempCoordinate[0], tempCoordinate[1], tempCoordinate[2]);
+				j++;
+				count = 0;
+			}
+
+			
+		}
+
+		fclose(fp);*/
+		Coordinates[0] = Coordinate(0.2f, 1.9f, -0.9f);
+		Coordinates[1] = Coordinate(-1.8f, 1.9f, -0.9f);
+		Coordinates[2] = Coordinate(-3.8f, 1.9f, -0.9f);
+		Coordinates[3] = Coordinate(-5.8f, 1.9f, -0.9f);
+		Coordinates[4] = Coordinate(0.2f, 1.9f, 3.1f);
+		Coordinates[5] = Coordinate(-1.8f, 1.9f, 3.1f);
+		Coordinates[6] = Coordinate(-3.8f, 1.9f, 3.1f);
+		Coordinates[7] = Coordinate(-5.8f, 1.9f, 3.1f);
+		
+		
+		return Coordinates;
+	}
+
+	void loadTextures() {
+
 	}
 	
 	// Here it is the creation of the command buffer:
@@ -402,78 +457,15 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DS1.uniformBuffersMemory[0][currentImage]);
 
 		//QUADRI * N
-		//quadri a destra
-		/*ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(0.4, 0.4, 0.05)) *
-			glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)) *
-			glm::translate(glm::mat4(1.0f), glm::vec3(-18.0f, 4.7f, -0.5f));*/
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, -0.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[0].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[0].uniformBuffersMemory[0][currentImage]);
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, -0.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[1].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[1].uniformBuffersMemory[0][currentImage]);
-
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, -0.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[2].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[2].uniformBuffersMemory[0][currentImage]);
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, -0.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[3].uniformBuffersMemory[0][currentImage]);
-
-
-		//quadri a sinistra
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, 3.1f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[4].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[4].uniformBuffersMemory[0][currentImage]);
-
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, 3.1f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[5].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[5].uniformBuffersMemory[0][currentImage]);
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, 3.1f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));;
-
-		vkMapMemory(device, DSPicture[6].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[6].uniformBuffersMemory[0][currentImage]);
-
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, 3.1f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
-
-		vkMapMemory(device, DSPicture[7].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSPicture[7].uniformBuffersMemory[0][currentImage]);
+		vector<Coordinate> Coordinates = loadCoordinates();
+		for (int i = 0; i < numPictures; i++) {
+			ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
+				* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
+			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
+				sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vkUnmapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage]);
+		}
 
 		
 

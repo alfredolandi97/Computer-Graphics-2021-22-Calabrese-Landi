@@ -1,0 +1,8 @@
+textures/cezan.jpg
+textures/caravaggio.jpg
+textures/botticelli.jpg
+textures/david.jpg
+textures/vangogh.jpg
+textures/cole.jpg
+textures/dalì.jpg
+textures/monet.jpg
