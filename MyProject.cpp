@@ -23,6 +23,9 @@ struct globalUniformBufferObject {
 	
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
+	alignas(16) glm::vec3 lightPos[8];
+	alignas(16) glm::vec3 lightColor;
+	alignas(16) glm::vec2 coneInOutDecayExp;
 	
 };
 
@@ -439,6 +442,16 @@ class MyProject : public BaseProject {
 			swapChainExtent.width / (float)swapChainExtent.height,
 			0.1f, 50.0f);;
 		gubo.proj[1][1] *= -1;
+		gubo.lightPos[0] = glm::vec3(0.2f, 3.0f, -0.4f); //point lights
+		gubo.lightPos[1] = glm::vec3(-1.8f, 3.0f, -0.4f);
+		gubo.lightPos[2] = glm::vec3(-3.8f, 3.0f, -0.4f);
+		gubo.lightPos[3] = glm::vec3(-5.8f, 3.0f, -0.4f);
+		gubo.lightPos[4] = glm::vec3(0.2f, 3.0f, 2.6f);
+		gubo.lightPos[5] = glm::vec3(-1.8f, 3.0f, 2.6f);
+		gubo.lightPos[6] = glm::vec3(-3.8f, 3.0f, 2.6f);
+		gubo.lightPos[7] = glm::vec3(-5.8f, 3.0f, 2.6f);
+		gubo.lightColor = glm::vec3(1.0f, 0.96f, 0.934f);
+		gubo.coneInOutDecayExp = glm::vec2(0.5f, 1.5f);
 
 		vkMapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(gubo), 0, &data);
@@ -487,9 +500,9 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
 
 		//DESC DESTRA
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, -0.7f))
+		ubo.model = glm::mat4(float(visible)) * (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, -0.7f))
 			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
-			*glm::scale(glm::mat4(1.0f), glm::vec3(0,visible,visible)));
+			);
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
 		vkMapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -497,9 +510,8 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage]);
 
 
-		ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, -0.7f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
-			* glm::scale(glm::mat4(1.0f), glm::vec3(0, visible, visible)));
+		ubo.model = glm::mat4(float(visible)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, -0.7f))
+			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
 		vkMapMemory(device, DSDesc[1].uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
