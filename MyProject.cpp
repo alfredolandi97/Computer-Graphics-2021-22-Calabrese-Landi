@@ -26,6 +26,10 @@ struct globalUniformBufferObject {
 	alignas(16) glm::vec3 lightPos[8];
 	alignas(16) glm::vec3 lightColor;
 	alignas(16) glm::vec2 coneInOutDecayExp;
+	alignas(16) glm::vec3 AmbColor;
+	alignas(16) glm::vec3 DzColor;
+	alignas(16) glm::vec3 DyColor;
+	alignas(16) glm::vec3 DxColor;
 	
 };
 
@@ -452,6 +456,10 @@ class MyProject : public BaseProject {
 		gubo.lightPos[7] = glm::vec3(-5.8f, 3.0f, 2.6f);
 		gubo.lightColor = glm::vec3(1.0f, 0.96f, 0.934f);
 		gubo.coneInOutDecayExp = glm::vec2(0.5f, 1.5f);
+		gubo.AmbColor = glm::vec3(0.6f, 0.6f, 0.6f);
+		gubo.DzColor = glm::vec3(0.5f, 0.1f, 0.1f);
+		gubo.DyColor = glm::vec3(0.1f, 0.15f, 0.3f);
+		gubo.DxColor = glm::vec3(0.0f, 0.5f, 0.1f);
 
 		vkMapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(gubo), 0, &data);

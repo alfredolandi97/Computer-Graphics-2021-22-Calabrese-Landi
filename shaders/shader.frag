@@ -6,6 +6,10 @@ layout(set = 0, binding = 0) uniform globalUniformBufferObject {
 	vec3 lightPos[8];
 	vec3 lightColor;
 	vec2 coneInOutDecayExp;
+	vec3 AmbColor;
+	vec3 DzColor;
+	vec3 DyColor;
+	vec3 DxColor;
 } gubo;
 
 layout(set=1, binding = 1) uniform sampler2D texSampler;
@@ -31,6 +35,12 @@ vec3 Lambert_Diffuse_BRDF(vec3 L, vec3 N, vec3 C) {
 	return C*max(dot(N,L), 0);
 }
 
+vec3 AmbientLightning(vec3 N, vec3 diffColor){
+	vec3 la = gubo.AmbColor + N.x*gubo.DxColor+N.y*gubo.DyColor+N.z*gubo.DzColor;
+
+	return la*diffColor;
+}
+
 void main() {
 	const vec3  diffColor = texture(texSampler, fragTexCoord).rgb;
 	const vec3  specColor = vec3(1.0f, 1.0f, 1.0f);
@@ -54,5 +64,5 @@ void main() {
 	//vec3 ambient  = vec3(0.3f,0.3f, 0.3f) * diffColor;
 	
 	//outColor = vec4(clamp(ambient + diffuse + specular, vec3(0.0f), vec3(1.0f)), 1.0f);
-	outColor = vec4(tempOutColor.xyz, 1.0f);
+	outColor = vec4(clamp(tempOutColor + AmbientLightning(N, diffColor), vec3(0.0f), vec3(1.0f)), 1.0f);
 }

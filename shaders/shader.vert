@@ -5,6 +5,10 @@
 	vec3 lightPos[8];
 	vec3 lightColor;
 	vec2 coneInOutDecayExp;
+	vec3 AmbColor;
+	vec3 DzColor;
+	vec3 DyColor;
+	vec3 DxColor;
 } gubo;
 layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 model;

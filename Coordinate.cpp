@@ -8,6 +8,12 @@ Coordinate::Coordinate(float x, float y, float z){
 	pos = glm::vec3(x, y, z);
 }
 
+Coordinate::Coordinate(float *coordinatesVector){
+	pos.x = coordinatesVector[0];
+	pos.y = coordinatesVector[1];
+	pos.z = coordinatesVector[2];
+}
+
 float Coordinate::getX(){
 	return pos.x;
 }

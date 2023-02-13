@@ -8,6 +8,7 @@ class Coordinate{
 	public:
 		Coordinate();
 		Coordinate(float x, float y, float z);
+		Coordinate(float *coordinatesVector);
 		float getX();
 		float getY();
 		float getZ();
