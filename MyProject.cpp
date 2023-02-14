@@ -255,6 +255,8 @@ class MyProject : public BaseProject {
 		Coordinates[5] = Coordinate(-1.8f, 1.9f, 3.1f);
 		Coordinates[6] = Coordinate(-3.8f, 1.9f, 3.1f);
 		Coordinates[7] = Coordinate(-5.8f, 1.9f, 3.1f);
+
+
 		
 		
 		return Coordinates;
@@ -266,11 +268,13 @@ class MyProject : public BaseProject {
 		return std::abs(glm::length(diff)) < std::abs(glm::length(c));
 	}*/
 
-	bool setVisible(glm::vec3 campos, glm::vec3 coordinate) {
+	int enableDesc(glm::vec3 campos, Coordinate coordinate) {
 		glm::vec3 c(1.2f, 1.2f, 1.2f);
-		glm::vec3 diff = campos - coordinate;
-		return glm::length(diff) < glm::length(c);
+		glm::vec3 diff = campos - coordinate.getPos();
+		if (glm::length(diff) < glm::length(c))
+			return 1;
 	}
+	
 
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
@@ -510,6 +514,7 @@ class MyProject : public BaseProject {
 		memcpy(data, &gubo, sizeof(gubo));
 		vkUnmapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage]);
 		
+		
 
 		
 
@@ -552,10 +557,37 @@ class MyProject : public BaseProject {
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
+		
+		
 		int vis2 = 0;
+		vector<Coordinate> Coordinates2(numPictures);
+		Coordinates2[0] = Coordinate(0.2f, 1.9f, -0.7f);
+		Coordinates2[1] = Coordinate(-1.8f, 1.9f, -0.7f);
+		Coordinates2[2] = Coordinate(-3.8f, 1.9f, -0.7f);
+		Coordinates2[3] = Coordinate(-5.8f, 1.9f, -0.7f);
+		Coordinates2[4] = Coordinate(0.2f, 1.9f, 2.9f);
+		Coordinates2[5] = Coordinate(-1.8f, 1.9f, 2.9f);
+		Coordinates2[6] = Coordinate(-3.8f, 1.9f, 2.9f);
+		Coordinates2[7] = Coordinate(-5.8f, 1.9f, 2.9f);
+
+		
+		for (int i = 0; i < numPictures; i++) {
+			if (visible) {
+				vis2 = enableDesc(CamPos, Coordinates2[i]);
+			}
+			ubo.specularAbility = 0;
+			ubo.model = (glm::translate(glm::mat4(vis2), Coordinates2[i].getPos())
+				* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
+			vkMapMemory(device, DSDesc[i].uniformBuffersMemory[0][currentImage], 0,
+				sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vkUnmapMemory(device, DSDesc[i].uniformBuffersMemory[0][currentImage]);
+		}
+		
+		/*
 		//DESC DESTRA
-		if (visible && setVisible(CamPos, glm::vec3(0.2f, 1.9f, -0.7f))) {
-			vis2 = 1;
+		if (visible) {
+			vis2 = enableDesc(CamPos, glm::vec3(0.2f, 1.9f, -0.7f));
 		}
 		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, -0.7f))
@@ -659,7 +691,7 @@ class MyProject : public BaseProject {
 		vkMapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage]);
+		vkUnmapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage]);*/
 		/*
 		ubo.model = glm::mat4(1.0f);
 		vkMapMemory(device, DSSky.uniformBuffersMemory[0][currentImage], 0,
