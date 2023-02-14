@@ -78,9 +78,9 @@ class MyProject : public BaseProject {
 	Texture TDesc[numd];
 	DescriptorSet DSDesc[numd];
 
-	Model MSky;
+	/*Model MSky;
 	Texture TSky;
-	DescriptorSet DSSky;
+	DescriptorSet DSSky;*/
 	
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -91,9 +91,9 @@ class MyProject : public BaseProject {
 		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 5 + numd + num;
-		texturesInPool = 4 + numd + num;
-		setsInPool = 5 + numd + num;
+		uniformBlocksInPool = 4 + numd + num;
+		texturesInPool = 3 + numd + num;
+		setsInPool = 4 + numd + num;
 	}
 	
 	// Here you load and setup all your Vulkan objects
@@ -159,13 +159,13 @@ class MyProject : public BaseProject {
 		
 
 
-		MSky.init(this, skym_path);
+	/*	MSky.init(this, skym_path);
 		TSky.init(this, skyt_path);
-		DSSky.init(this, &DSLObj, {
+		/*DSSky.init(this, &DSLObj, {
 
 					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 					{1, TEXTURE, 0, &TSky}
-			});
+			});*/
 
 
 		DSGlobal.init(this, &DSLGlobal, {
@@ -204,9 +204,9 @@ class MyProject : public BaseProject {
 			TDesc[i].cleanup();
 		}
 		
-		MSky.cleanup();
+		/*MSky.cleanup();
 		TSky.cleanup();
-		DSSky.cleanup();
+		DSSky.cleanup();*/
 		
 		
 		
@@ -382,7 +382,7 @@ class MyProject : public BaseProject {
 		}
 
 
-		VkBuffer vertexBuffers6[] = { MSky.vertexBuffer };
+		/*VkBuffer vertexBuffers6[] = {MSky.vertexBuffer};
 		VkDeviceSize offsets6[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers6, offsets6);
 		vkCmdBindIndexBuffer(commandBuffer, MFloor.indexBuffer, 0,
@@ -392,7 +392,7 @@ class MyProject : public BaseProject {
 			P1.pipelineLayout, 1, 1, &DSSky.descriptorSets[currentImage],
 			0, nullptr);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MSky.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MSky.indices.size()), 1, 0, 0, 0);*/
 	}
 	glm::mat3 CamDir = glm::mat3(1.0f);
 	glm::vec3 CamPos = glm::vec3(-2.5f, 1.7f, 0.5f);
@@ -514,7 +514,7 @@ class MyProject : public BaseProject {
 		
 
 		//MUSEO
-		ubo.specularAbility = 0;
+		ubo.specularAbility = 1;
 		ubo.model = glm::mat4(1.0f); 
 		vkMapMemory(device, DS1.uniformBuffersMemory[0][currentImage], 0,
 							sizeof(ubo), 0, &data);
@@ -538,7 +538,7 @@ class MyProject : public BaseProject {
 		
 		
 		//TERRAIN
-		ubo.specularAbility = 0;
+		ubo.specularAbility = 1;
 		ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.9f, 0.0f));
 		vkMapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -546,7 +546,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage]);
 
 		//FLOOR
-		ubo.specularAbility = 0;
+		ubo.specularAbility = 1;
 		ubo.model = glm::mat4(1.0f);
 		vkMapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
