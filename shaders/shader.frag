@@ -14,6 +14,7 @@ layout(set = 0, binding = 0) uniform globalUniformBufferObject {
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 model;
+	float specularAbility;
 } ubo;
 
 layout(set=1, binding = 1) uniform sampler2D texSampler;
@@ -40,10 +41,13 @@ vec3 Lambert_Diffuse_BRDF(vec3 L, vec3 N, vec3 C) {
 }
 
 vec3 Phong_Specular_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float gamma)  {
-
-	vec3 rlx = -reflect(L, N);
+	if(ubo.specularAbility == 1){
+		vec3 rlx = -reflect(L, N);
 	
-	return C*pow(clamp(dot(rlx, V), 0, 1), gamma);
+		return C*pow(clamp(dot(rlx, V), 0, 1), gamma);
+	}else{
+		return vec3(0.0f,0.0f,0.0f);
+	}
 }
 
 vec3 AmbientLightning(vec3 N, vec3 diffColor){
@@ -64,7 +68,7 @@ void main() {
 	vec3 tempOutColor = vec3(0.0f,0.0f,0.0f);
 	for(int i=0;i<(gubo.lightPos).length();i++){
 		tempOutColor+=diffColor *Lambert_Diffuse_BRDF(point_light_dir(gubo.lightPos[i], fragPos), N, point_light_color(gubo.lightPos[i], fragPos))
-		/*+ Phong_Specular_BRDF(point_light_dir(gubo.lightPos[i], fragPos), N, V, specColor, specPower)*/;
+		+ Phong_Specular_BRDF(point_light_dir(gubo.lightPos[i], fragPos), N, V, specColor, specPower);
 	}
 	// Phong specular
 	//vec3 specular = specColor * pow(max(dot(R,V), 0.0f), specPower);
