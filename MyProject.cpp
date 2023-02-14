@@ -14,7 +14,8 @@ const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
 const std::string TEXTURE_PATHFLOOR = "textures/floor.png";
 const std::string texture_desc[] = { "textures/cez.png", "textures/cardesc.png", "textures/bottdesc.png", "textures/oratdesc.png", "textures/vgdesc.png", "textures/tcdesc.png", "textures/dalidesc.png", "textures/mondesc.png" };
-
+const std::string skyt_path = "textures/uv.png";
+const std::string skym_path = "models/skybox1.obj";
 const int num = 8;
 const int numd = 8;
 
@@ -35,6 +36,7 @@ struct globalUniformBufferObject {
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
+	alignas(16) float specularAbility;
 };
 
 //Questo commento è per testare GitHub
@@ -75,6 +77,10 @@ class MyProject : public BaseProject {
 
 	Texture TDesc[numd];
 	DescriptorSet DSDesc[numd];
+
+	Model MSky;
+	Texture TSky;
+	DescriptorSet DSSky;
 	
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -85,9 +91,9 @@ class MyProject : public BaseProject {
 		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 4+ numd + num;
-		texturesInPool = 3+ numd + num;
-		setsInPool = 4+ numd + num;
+		uniformBlocksInPool = 5 + numd + num;
+		texturesInPool = 4 + numd + num;
+		setsInPool = 5 + numd + num;
 	}
 	
 	// Here you load and setup all your Vulkan objects
@@ -152,9 +158,22 @@ class MyProject : public BaseProject {
 		}
 		
 
+
+		MSky.init(this, skym_path);
+		TSky.init(this, skyt_path);
+		DSSky.init(this, &DSLObj, {
+
+					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+					{1, TEXTURE, 0, &TSky}
+			});
+
+
 		DSGlobal.init(this, &DSLGlobal, {
 					{0, UNIFORM, sizeof(globalUniformBufferObject), nullptr}
 			});
+
+
+		
 	}
 
 	// Here you destroy all the objects you created!		
@@ -185,6 +204,9 @@ class MyProject : public BaseProject {
 			TDesc[i].cleanup();
 		}
 		
+		MSky.cleanup();
+		TSky.cleanup();
+		DSSky.cleanup();
 		
 		
 		
@@ -358,6 +380,19 @@ class MyProject : public BaseProject {
 			vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
 		}
+
+
+		VkBuffer vertexBuffers6[] = { MSky.vertexBuffer };
+		VkDeviceSize offsets6[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers6, offsets6);
+		vkCmdBindIndexBuffer(commandBuffer, MFloor.indexBuffer, 0,
+			VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			P1.pipelineLayout, 1, 1, &DSSky.descriptorSets[currentImage],
+			0, nullptr);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MSky.indices.size()), 1, 0, 0, 0);
 	}
 	glm::mat3 CamDir = glm::mat3(1.0f);
 	glm::vec3 CamPos = glm::vec3(-2.5f, 1.7f, 0.5f);
@@ -366,7 +401,7 @@ class MyProject : public BaseProject {
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
 		
-		 int visible = 0;
+		 bool visible = 0;
 		
 		static auto startTime = std::chrono::high_resolution_clock::now();
 		static float lastTime = 0.0f;
@@ -479,7 +514,7 @@ class MyProject : public BaseProject {
 		
 
 		//MUSEO
-
+		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(1.0f); 
 		vkMapMemory(device, DS1.uniformBuffersMemory[0][currentImage], 0,
 							sizeof(ubo), 0, &data);
@@ -489,6 +524,7 @@ class MyProject : public BaseProject {
 		//QUADRI * N
 		vector<Coordinate> Coordinates = loadCoordinates();
 		for (int i = 0; i < numPictures; i++) {
+			ubo.specularAbility = 1;
 			ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
 				* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
 			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
@@ -502,7 +538,7 @@ class MyProject : public BaseProject {
 		
 		
 		//TERRAIN
-
+		ubo.specularAbility = 0;
 		ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.9f, 0.0f));
 		vkMapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -510,6 +546,7 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage]);
 
 		//FLOOR
+		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(1.0f);
 		vkMapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -517,9 +554,10 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
 		int vis2 = 0;
 		//DESC DESTRA
-		if (visible == 1 && setVisible(CamPos, glm::vec3(0.2f, 1.9f, -0.7f))) {
+		if (visible && setVisible(CamPos, glm::vec3(0.2f, 1.9f, -0.7f))) {
 			vis2 = 1;
 		}
+		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, -0.7f))
 			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
 			);
@@ -529,9 +567,10 @@ class MyProject : public BaseProject {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage]);
 
-		if (visible == 1 && setVisible(CamPos, glm::vec3(-1.8f, 1.9f, -0.7f))) {
+		if (visible && setVisible(CamPos, glm::vec3(-1.8f, 1.9f, -0.7f))) {
 			vis2 = 1;
 		}
+		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, -0.7f))
 			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
@@ -540,9 +579,10 @@ class MyProject : public BaseProject {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSDesc[1].uniformBuffersMemory[0][currentImage]);
 
-		if (visible == 1 && setVisible(CamPos, glm::vec3(-3.8f, 1.9f, -0.7f))) {
+		if (visible && setVisible(CamPos, glm::vec3(-3.8f, 1.9f, -0.7f))) {
 			vis2 = 1;
 		}
+		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, -0.7f))
 			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
 			);
@@ -552,9 +592,10 @@ class MyProject : public BaseProject {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSDesc[2].uniformBuffersMemory[0][currentImage]);
 
-		if (visible == 1 && setVisible(CamPos, glm::vec3(-5.8f, 1.9f, -0.7f))) {
+		if (visible && setVisible(CamPos, glm::vec3(-5.8f, 1.9f, -0.7f))) {
 			vis2 = 1;
 		}
+		ubo.specularAbility = 0;
 		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, -0.7f))
 			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
 			);
@@ -566,11 +607,12 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSDesc[3].uniformBuffersMemory[0][currentImage]);
 
 		//DESC A SIN
-		if (visible == 1 && setVisible(CamPos, glm::vec3(0.2f, 1.9f, 2.9f))) {
+		ubo.specularAbility = 0;
+		if (visible && setVisible(CamPos, glm::vec3(0.2f, 1.9f, 2.9f))) {
 			vis2 = 1;
 		}
 		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
+			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
 			);
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
 		vkMapMemory(device, DSDesc[4].uniformBuffersMemory[0][currentImage], 0,
@@ -578,11 +620,12 @@ class MyProject : public BaseProject {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSDesc[4].uniformBuffersMemory[0][currentImage]);
 
-		if (visible == 1 && setVisible(CamPos, glm::vec3(-1.8f, 1.9f, 2.9f))) {
+		if (visible && setVisible(CamPos, glm::vec3(-1.8f, 1.9f, 2.9f))) {
 			vis2 = 1;
 		}
-		ubo.model = glm::mat4(float(visible)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
+		ubo.specularAbility = 0;
+		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, 2.9f))
+			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
 			);
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
 		vkMapMemory(device, DSDesc[5].uniformBuffersMemory[0][currentImage], 0,
@@ -591,11 +634,12 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSDesc[5].uniformBuffersMemory[0][currentImage]);
 
 
-		if (visible == 1 && setVisible(CamPos, glm::vec3(-3.8f, 1.9f, 2.9f))) {
+		if (visible && setVisible(CamPos, glm::vec3(-3.8f, 1.9f, 2.9f))) {
 			vis2 = 1;
 		}
-		ubo.model = glm::mat4(float(visible)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
+		ubo.specularAbility = 0;
+		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, 2.9f))
+			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
 			);
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
 		vkMapMemory(device, DSDesc[6].uniformBuffersMemory[0][currentImage], 0,
@@ -604,17 +648,24 @@ class MyProject : public BaseProject {
 		vkUnmapMemory(device, DSDesc[6].uniformBuffersMemory[0][currentImage]);
 
 
-		if (visible == 1 && setVisible(CamPos, glm::vec3(-5.8f, 1.9f, 2.9f))) {
+		if (visible && setVisible(CamPos, glm::vec3(-5.8f, 1.9f, 2.9f))) {
 			vis2 = 1;
 		}
-		ubo.model = glm::mat4(float(visible)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
+		ubo.specularAbility = 0;
+		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, 2.9f))
+			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
 			);
 		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
 		vkMapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage]);
+		/*
+		ubo.model = glm::mat4(1.0f);
+		vkMapMemory(device, DSSky.uniformBuffersMemory[0][currentImage], 0,
+			sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, DSSky.uniformBuffersMemory[0][currentImage]);*/
 	}	
 };
 
