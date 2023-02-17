@@ -558,7 +558,7 @@ class MyProject : public BaseProject {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage]);
 		
-		
+		//qui le ho dichiarate localment anzichè dalla funzione perchè nella funzione le hai hardcodate
 		int vis2 = 0;
 		vector<Coordinate> Coordinates2(numPictures);
 		Coordinates2[0] = Coordinate(0.2f, 1.9f, -0.7f);
