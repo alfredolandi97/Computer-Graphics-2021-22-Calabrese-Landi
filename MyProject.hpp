@@ -29,6 +29,7 @@
 #include <stb_image.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_gltf.h>
 #include <tiny_obj_loader.h>
 
 //custom code
@@ -371,20 +372,26 @@ struct TextureData {
 class BaseProject;
 
 struct Model {
-	BaseProject *BP;
+	BaseProject* BP;
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
+	std::vector<tinyobj::mesh_t> meshes;
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
-	
+
 	void loadModel(std::string file);
 	void createIndexBuffer();
 	void createVertexBuffer();
 
-	void init(BaseProject *bp, std::string file);
+	const std::vector<tinyobj::mesh_t>& getMeshes() const {
+		return meshes;
+	}
+
+	void init(BaseProject* bp, std::string file);
 	void cleanup();
+
 };
 
 struct Texture {
@@ -1742,6 +1749,14 @@ void Model::loadModel(std::string file) {
 	}
 	
 	for (const auto& shape : shapes) {
+		tinyobj::mesh_t mesh{};
+		mesh.indices = shape.mesh.indices;
+		mesh.num_face_vertices = shape.mesh.num_face_vertices;
+		mesh.material_ids = shape.mesh.material_ids;
+		mesh.smoothing_group_ids = shape.mesh.smoothing_group_ids;
+		mesh.tags = shape.mesh.tags;
+
+		meshes.push_back(mesh);
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex{};
 			
@@ -1804,6 +1819,8 @@ void Model::init(BaseProject *bp, std::string file) {
 	loadModel(file);
 	createVertexBuffer();
 	createIndexBuffer();
+	
+	
 }
 
 void Model::cleanup() {

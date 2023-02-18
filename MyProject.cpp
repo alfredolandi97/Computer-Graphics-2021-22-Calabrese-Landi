@@ -4,7 +4,7 @@
 using namespace std;
 #include "Coordinate.cpp"
 
-const std::string MODEL_PATH = "models/museumTri22.obj";
+const std::string MODEL_PATH = "models/prova1.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro3.obj";
 int numPictures = 8;
@@ -274,6 +274,76 @@ class MyProject : public BaseProject {
 		if (glm::length(diff) < glm::length(c))
 			return 1;
 	}
+
+	bool detectCollision(const glm::vec3& camPos, const std::vector<Model>& walls, float threshold) {
+		for (const auto& wall : walls) {
+			for (const auto& mesh : wall.getMeshes()) {
+				for (size_t i = 0; i < mesh.indices.size(); i += 3) {
+					const auto& v0 = wall.vertices[mesh.indices[i].vertex_index];
+					const auto& v1 = wall.vertices[mesh.indices[i + 1].vertex_index];
+					const auto& v2 = wall.vertices[mesh.indices[i + 2].vertex_index];
+
+					const glm::vec3 edge1 = v1.pos - v0.pos;
+					const glm::vec3 edge2 = v2.pos - v0.pos;
+					const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
+
+					// Compute the projection of the camera position onto the wall plane.
+					const float d = glm::dot(normal, v0.pos);
+					const glm::vec3 projectedCamPos = camPos - (glm::dot(normal, camPos) - d) * normal;
+
+					// Check if the projected camera position is inside the triangle.
+					const glm::vec3 v0p = projectedCamPos - v0.pos;
+					const glm::vec3 v1p = projectedCamPos - v1.pos;
+					const glm::vec3 v2p = projectedCamPos - v2.pos;
+					const float dot00 = glm::dot(v0p, v0p);
+					const float dot01 = glm::dot(v0p, v1p);
+					const float dot02 = glm::dot(v0p, v2p);
+					const float dot11 = glm::dot(v1p, v1p);
+					const float dot12 = glm::dot(v1p, v2p);
+					const float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+					const float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+					const float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+					if (u >= 0.0f && v >= 0.0f && u + v <= 1.0f) {
+						// The projected camera position is inside the triangle, so a collision has occurred.
+						const float distToWall = glm::distance(projectedCamPos, camPos);
+						if (distToWall < threshold) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	
+	/*
+	bool detectCollision(const glm::vec3& camPos, const std::vector<Model>& walls, float threshold) {
+		for (const auto& wall : walls) {
+			for (const auto& mesh : wall.getMeshes()) {
+				for (size_t i = 0; i < mesh.indices.size(); i += 3) {
+					const auto& v0 = wall.vertices[mesh.indices[i].vertex_index];
+					const auto& v1 = wall.vertices[mesh.indices[i + 1].vertex_index];
+					const auto& v2 = wall.vertices[mesh.indices[i + 2].vertex_index];
+					glm::vec3 midpoint = (v0.pos + v1.pos + v2.pos) / 3.0f;
+					float distance = glm::distance(camPos, midpoint);
+					if (distance < threshold) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	*/
+
+
+
+
+
+
 	
 
 	// Here it is the creation of the command buffer:
@@ -376,7 +446,7 @@ class MyProject : public BaseProject {
 		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
 			VK_INDEX_TYPE_UINT32);
 		for (int i = 0; i < numd; i++) {
-
+			
 			vkCmdBindDescriptorSets(commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				P1.pipelineLayout, 1, 1, &DSDesc[i].descriptorSets[currentImage],
@@ -399,7 +469,7 @@ class MyProject : public BaseProject {
 			static_cast<uint32_t>(MSky.indices.size()), 1, 0, 0, 0);*/
 	}
 	glm::mat3 CamDir = glm::mat3(1.0f);
-	glm::vec3 CamPos = glm::vec3(-2.5f, 1.7f, 0.5f);
+	glm::vec3 CamPos = glm::vec3(0.0, 1.5f, 0.0f);
 	glm::vec3 CamAng = glm::vec3(0.0f, 0.0f, 0.0f);
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
@@ -481,9 +551,20 @@ class MyProject : public BaseProject {
 				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(0, 0, 1, 1)) * deltaT;
 		}
 
-		if (!canStep(CamPos.x, CamPos.z)) {
-			CamPos = oldCamPos;
-		}
+		// Detect collision and slide along the wall
+		
+		const std::vector<Model>& walls = { M1 };
+
+		
+
+		
+
+		if (detectCollision(CamPos, walls, 0.007f)) {
+	
+				CamPos = oldCamPos;
+			}
+		
+		
 
 		void* data;
 		glm::mat4 CamMat = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos);
@@ -584,120 +665,7 @@ class MyProject : public BaseProject {
 			vkUnmapMemory(device, DSDesc[i].uniformBuffersMemory[0][currentImage]);
 		}
 		
-		/*
-		//DESC DESTRA
-		if (visible) {
-			vis2 = enableDesc(CamPos, glm::vec3(0.2f, 1.9f, -0.7f));
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, -0.7f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
-			);
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[0].uniformBuffersMemory[0][currentImage]);
-
-		if (visible && setVisible(CamPos, glm::vec3(-1.8f, 1.9f, -0.7f))) {
-			vis2 = 1;
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, -0.7f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[1].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[1].uniformBuffersMemory[0][currentImage]);
-
-		if (visible && setVisible(CamPos, glm::vec3(-3.8f, 1.9f, -0.7f))) {
-			vis2 = 1;
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, -0.7f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
-			);
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[2].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[2].uniformBuffersMemory[0][currentImage]);
-
-		if (visible && setVisible(CamPos, glm::vec3(-5.8f, 1.9f, -0.7f))) {
-			vis2 = 1;
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, -0.7f))
-			* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0))
-			);
-
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[3].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[3].uniformBuffersMemory[0][currentImage]);
-
-		//DESC A SIN
-		ubo.specularAbility = 0;
-		if (visible && setVisible(CamPos, glm::vec3(0.2f, 1.9f, 2.9f))) {
-			vis2 = 1;
-		}
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(0.2f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
-			);
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[4].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[4].uniformBuffersMemory[0][currentImage]);
-
-		if (visible && setVisible(CamPos, glm::vec3(-1.8f, 1.9f, 2.9f))) {
-			vis2 = 1;
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-1.8f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
-			);
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[5].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[5].uniformBuffersMemory[0][currentImage]);
-
-
-		if (visible && setVisible(CamPos, glm::vec3(-3.8f, 1.9f, 2.9f))) {
-			vis2 = 1;
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-3.8f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
-			);
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[6].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[6].uniformBuffersMemory[0][currentImage]);
-
-
-		if (visible && setVisible(CamPos, glm::vec3(-5.8f, 1.9f, 2.9f))) {
-			vis2 = 1;
-		}
-		ubo.specularAbility = 0;
-		ubo.model = glm::mat4(float(vis2)) * (glm::translate(glm::mat4(1.0f), glm::vec3(-5.8f, 1.9f, 2.9f))
-			* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0))
-			);
-		//ubo.model = (glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 1.7f, -0.5f)) * glm::scale(ubo.model, glm::vec3(0.5 * visible, 0.5 * visible, 0.0)) * glm::rotate(glm::mat4(1.0f), -angq, glm::vec3(0, 1, 0)));
-		vkMapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSDesc[7].uniformBuffersMemory[0][currentImage]);*/
-		/*
-		ubo.model = glm::mat4(1.0f);
-		vkMapMemory(device, DSSky.uniformBuffersMemory[0][currentImage], 0,
-			sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, DSSky.uniformBuffersMemory[0][currentImage]);*/
+		
 	}	
 };
 
