@@ -43,30 +43,30 @@ struct UniformBufferObject {
 //Questo commento è per testare GitHub
 // MAIN ! 
 class MyProject : public BaseProject {
-	protected:
+protected:
 	// Here you list all the Vulkan objects you need:
-	
+
 	// Descriptor Layouts [what will be passed to the shaders]
 	DescriptorSetLayout DSLGlobal;
 	DescriptorSetLayout DSLObj;
 	DescriptorSet DSGlobal;
 	// Pipelines [Shader couples]
 	Pipeline P1;
-	
+
 
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	Model M1;
 	Texture T1;
 	DescriptorSet DS1; //instance DSLobj
-	
-	
+
+
 	Model M2;
 	//L'inizializzazione statica DEVE ESSERE CORRETTA, SI DEVE USARE QUELLA DINAMICA
 	Texture TPicture[num];
 	DescriptorSet DSPicture[num]; //instance DSLobj
 	//per ogni quadro dobbiamo aggiungere un descriptor set e siccome cambia la texture anche la texture
-	
+
 
 	Model MTerrain;
 	Texture TTerrain;
@@ -82,25 +82,25 @@ class MyProject : public BaseProject {
 	/*Model MSky;
 	Texture TSky;
 	DescriptorSet DSSky;*/
-	
+
 	// Here you set the main application parameters
 	void setWindowParameters() {
 		// window size, titile and initial background
 		windowWidth = 800;
 		windowHeight = 600;
 		windowTitle = "My Project";
-		initialBackgroundColor = {0.68f, 0.8f, 1.0f, 1.0f};
-		
+		initialBackgroundColor = { 0.68f, 0.8f, 1.0f, 1.0f };
+
 		// Descriptor pool sizes
 		uniformBlocksInPool = 4 + numd + num;
 		texturesInPool = 3 + numd + num;
 		setsInPool = 4 + numd + num;
 	}
-	
+
 	// Here you load and setup all your Vulkan objects
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
-		
+
 		DSLObj.init(this, {
 			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT},
 			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
@@ -110,16 +110,16 @@ class MyProject : public BaseProject {
 			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 			});
 
-		P1.init(this, "shaders/vert.spv", "shaders/frag.spv", {&DSLGlobal, &DSLObj});
+		P1.init(this, "shaders/vert.spv", "shaders/frag.spv", { &DSLGlobal, &DSLObj });
 		loadModels();
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		M1.init(this, MODEL_PATH);
 		T1.init(this, TEXTURE_PATH);
 		DS1.init(this, &DSLObj, {
-		
+
 					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 					{1, TEXTURE, 0, &T1}
-				});
+			});
 
 		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
 		M2.init(this, MODEL_PATH1);
@@ -140,7 +140,7 @@ class MyProject : public BaseProject {
 					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 					{1, TEXTURE, 0, &TTerrain}
 			});
-		
+
 		//FLOOR
 		MFloor.init(this, MODEL_PATHFLOOR);
 		TFloor.init(this, TEXTURE_PATHFLOOR);
@@ -158,16 +158,16 @@ class MyProject : public BaseProject {
 						{1, TEXTURE, 0, &TDesc[i]}
 				});
 		}
-		
 
 
-	/*	MSky.init(this, skym_path);
-		TSky.init(this, skyt_path);
-		/*DSSky.init(this, &DSLObj, {
 
-					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-					{1, TEXTURE, 0, &TSky}
-			});*/
+		/*	MSky.init(this, skym_path);
+			TSky.init(this, skyt_path);
+			/*DSSky.init(this, &DSLObj, {
+
+						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+						{1, TEXTURE, 0, &TSky}
+				});*/
 
 
 		DSGlobal.init(this, &DSLGlobal, {
@@ -175,7 +175,7 @@ class MyProject : public BaseProject {
 			});
 
 
-		
+
 	}
 
 	// Here you destroy all the objects you created!		
@@ -205,23 +205,23 @@ class MyProject : public BaseProject {
 			DSDesc[i].cleanup();
 			TDesc[i].cleanup();
 		}
-		
+
 		/*MSky.cleanup();
 		TSky.cleanup();
 		DSSky.cleanup();*/
-		
-		
-		
+
+
+
 	}
 
-	FILE* loadFile(const char *filename) {
+	FILE* loadFile(const char* filename) {
 		FILE* fpin;
 		fopen_s(&fpin, filename, "r");
 		if (!fpin) {
-			cout << "Errore, impossibile aprire il file: "<<filename << endl;
+			cout << "Errore, impossibile aprire il file: " << filename << endl;
 			return NULL;
 		}
-		
+
 		return fpin;
 	}
 
@@ -229,7 +229,7 @@ class MyProject : public BaseProject {
 		vector<Coordinate> Coordinates;
 		Coordinates.reserve(FIRST_OBJECTS_SIZE);
 		float tmpCoordinates[3];
-		FILE* fp = loadFile("C:\\Users\\Alfredo Landi\\source\\repos\\alfredolandi97\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Coordinates.txt");
+		FILE* fp = loadFile("C:\\Users\\HP\\source\\repos\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Coordinates.txt");
 		while (!feof(fp)) {
 			fscanf(fp, "%f %f %f", &tmpCoordinates[0], &tmpCoordinates[1], &tmpCoordinates[2]);
 			Coordinates.push_back(Coordinate(tmpCoordinates));
@@ -237,20 +237,20 @@ class MyProject : public BaseProject {
 
 
 		fclose(fp);
-		
+
 		return Coordinates;
 	}
 
 	vector<string> loadTextures() {
 		vector<string> textures_name;
 		textures_name.reserve(FIRST_OBJECTS_SIZE);
-		FILE *fp = loadFile("C:\\Users\\Alfredo Landi\\source\\repos\\alfredolandi97\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Textures.txt");
+		FILE* fp = loadFile("C:\\Users\\HP\\source\\repos\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Textures.txt");
 		char tmpTextureName[MAX_TEXTURE_NAME_SIZE];
 		int count = 0;
-		while (fscanf(fp, "%s", tmpTextureName)!=EOF) {
-			cout << tmpTextureName<<endl;
+		while (fscanf(fp, "%s", tmpTextureName) != EOF) {
+			cout << tmpTextureName << endl;
 			textures_name.push_back(tmpTextureName);
-			cout<<textures_name[count]<<endl;
+			cout << textures_name[count] << endl;
 			count++;
 		}
 
@@ -273,11 +273,15 @@ class MyProject : public BaseProject {
 		if (glm::length(diff) < glm::length(c))
 			return 1;
 	}
-
+	/*
 	bool detectCollision(const glm::vec3& camPos, const std::vector<Model>& walls, float threshold) {
 		for (const auto& wall : walls) {
 			for (const auto& mesh : wall.getMeshes()) {
 				for (size_t i = 0; i < mesh.indices.size(); i += 3) {
+
+					if (CamPos.z > 0.21f && CamPos.z < 0.71 && CamPos.x>1.2f && CamPos.x < 1.3f) {
+						return true;
+					}
 					const auto& v0 = wall.vertices[mesh.indices[i].vertex_index];
 					const auto& v1 = wall.vertices[mesh.indices[i + 1].vertex_index];
 					const auto& v2 = wall.vertices[mesh.indices[i + 2].vertex_index];
@@ -311,11 +315,87 @@ class MyProject : public BaseProject {
 						}
 					}
 				}
+
+
 			}
 		}
 
 		return false;
 	}
+	*/
+	/*
+	bool detectCollision(glm::vec3 campos) {
+		const float threshold = 0.1f;
+		const std::vector<float> wallPositionsX = { -6.8f, -4.8f, -2.8f, -0.8f, 1.2f };
+		const std::vector<float> wallPositionsZ = { 3.1f, 1.1f, -0.9f };
+
+		for (float wallPosX : wallPositionsX) {
+			if (std::abs(campos.x - wallPosX) < threshold) {
+				if (std::abs(campos.z - 0.5f) > 0.3f) {
+					std::cout << "POSITION" << campos.x << "," << campos.z << "\n";
+					return true;
+				}
+				
+			}
+		}
+		
+
+		for (float wallPosZ : wallPositionsZ) {
+			if (std::abs(campos.z - wallPosZ) < threshold) {
+				if (CamPos.z == 1.1f && (std::abs(campos.x - 0.3f) < 0.3f || std::abs(campos.x - 6.1f) < 0.3f)) {
+					std::cout << "POSITION" << campos.x << "," << campos.z << "\n";
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}*/
+
+
+	bool detectCollision(glm::vec3 campos) {
+		const float threshold = 0.1f;
+		const std::vector<float> wallPositionsX = { -6.9f, -4.9080f, -2.8579f, -0.80891f, 1.2507f };
+		const std::vector<float> wallPositionsZ = { 3.1456f, 1.1131f, -0.95383f };
+
+		for (float wallPosX : wallPositionsX) {
+			if (std::abs(campos.x - wallPosX) < threshold) {
+				if(!checkDoorZ(campos))
+				return true;
+			}
+		}
+
+
+		for (float wallPosZ : wallPositionsZ) {
+			if (std::abs(campos.z - wallPosZ) < threshold) {
+				if (!checkDoorX(campos))
+				return true;
+			}
+		}
+			
+		return false;
+	}
+
+
+	bool checkDoorX(glm::vec3 CamPos) {
+		if ((CamPos.x <= -5.9339f && CamPos.x >= -6.4339) || (CamPos.x >= 0.21609f && CamPos.x <= 0.71609f)) {
+			return true;
+		}
+		else return false;
+	}
+
+
+	bool checkDoorZ(glm::vec3 CamPos) {
+		if ((CamPos.z >= 1.63f && CamPos.z <= 2.13f) || (CamPos.z >= -0.4114f && CamPos.z <= 0.0866)) {
+			return true;
+		}
+		else return false;
+
+	}
+
+
+
+
 
 	
 	/*
@@ -488,7 +568,7 @@ class MyProject : public BaseProject {
 		const float ROT_SPEED = glm::radians(60.0f);
 		const float MOVE_SPEED = 1.25f;
 		const float MOUSE_RES = 500.0f;
-
+		
 		static double old_xpos = 0, old_ypos = 0;
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
@@ -558,12 +638,13 @@ class MyProject : public BaseProject {
 
 		
 
-		if (detectCollision(CamPos, walls, 0.007f)) {
+		if (detectCollision(CamPos)) {
 	
 				CamPos = oldCamPos;
 			}
 		
-		
+
+
 
 		void* data;
 		glm::mat4 CamMat = glm::translate(glm::transpose(glm::mat4(CamDir)), -CamPos);
