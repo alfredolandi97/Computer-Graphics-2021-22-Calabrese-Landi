@@ -3,12 +3,13 @@
 #include "MyProject.hpp"
 using namespace std;
 #include "Coordinate.cpp"
+#define FIRST_OBJECTS_SIZE 8
+#define MAX_TEXTURE_NAME_SIZE 50
 
 const std::string MODEL_PATH = "models/prova1.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro3.obj";
-int numPictures = 8;
-const std::string texture_path[] = {"textures/cezan.jpg", "textures/caravaggio.jpg", "textures/botticelli.jpg", "textures/david.jpg", "textures/vangogh.jpg", "textures/cole.jpg", "textures/dalì.jpg", "textures/monet.jpg" };
+vector<string> texture_path;
 const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
@@ -122,6 +123,7 @@ class MyProject : public BaseProject {
 
 		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
 		M2.init(this, MODEL_PATH1);
+		texture_path = loadTextures();
 		for (int i = 0; i < num; i++) {
 			TPicture[i].init(this, texture_path[i]);
 			DSPicture[i].init(this, &DSLObj, {
@@ -212,55 +214,52 @@ class MyProject : public BaseProject {
 		
 	}
 
-	FILE* loadFile(const char* filename) {
+	FILE* loadFile(const char *filename) {
 		FILE* fpin;
 		fopen_s(&fpin, filename, "r");
 		if (!fpin) {
 			cout << "Errore, impossibile aprire il file: "<<filename << endl;
-			exit(0);
+			return NULL;
 		}
-
+		
 		return fpin;
-
 	}
 
 	vector<Coordinate> loadCoordinates() {
-		vector<Coordinate> Coordinates(numPictures);
-		/*FILE* fp = loadFile("resources\\Coordinates.txt");
-		char readBuffer[10];
-		float tempCoordinate[3];
-		int j =0, count = 0;
-		vector<Coordinate> Coordinates(numPictures);
+		vector<Coordinate> Coordinates;
+		Coordinates.reserve(FIRST_OBJECTS_SIZE);
+		float tmpCoordinates[3];
+		FILE* fp = loadFile("C:\\Users\\Alfredo Landi\\source\\repos\\alfredolandi97\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Coordinates.txt");
 		while (!feof(fp)) {
-			fgets(readBuffer, 10, fp);
-			if (count % 3 != 0 || count == 0) {
-				tempCoordinate[count] = stof(readBuffer);
-				count++;
-			}
-			else if (count % 3 == 0 && count!=0) {
-				Coordinates[j] = Coordinate(tempCoordinate[0], tempCoordinate[1], tempCoordinate[2]);
-				j++;
-				count = 0;
-			}
-
-			
+			fscanf(fp, "%f %f %f", &tmpCoordinates[0], &tmpCoordinates[1], &tmpCoordinates[2]);
+			Coordinates.push_back(Coordinate(tmpCoordinates));
 		}
 
-		fclose(fp);*/
-		Coordinates[0] = Coordinate(0.2f, 1.9f, -0.9f);
-		Coordinates[1] = Coordinate(-1.8f, 1.9f, -0.9f);
-		Coordinates[2] = Coordinate(-3.8f, 1.9f, -0.9f);
-		Coordinates[3] = Coordinate(-5.8f, 1.9f, -0.9f);
-		Coordinates[4] = Coordinate(0.2f, 1.9f, 3.1f);
-		Coordinates[5] = Coordinate(-1.8f, 1.9f, 3.1f);
-		Coordinates[6] = Coordinate(-3.8f, 1.9f, 3.1f);
-		Coordinates[7] = Coordinate(-5.8f, 1.9f, 3.1f);
 
-
-		
+		fclose(fp);
 		
 		return Coordinates;
 	}
+
+	vector<string> loadTextures() {
+		vector<string> textures_name;
+		textures_name.reserve(FIRST_OBJECTS_SIZE);
+		FILE *fp = loadFile("C:\\Users\\Alfredo Landi\\source\\repos\\alfredolandi97\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Textures.txt");
+		char tmpTextureName[MAX_TEXTURE_NAME_SIZE];
+		int count = 0;
+		while (fscanf(fp, "%s", tmpTextureName)!=EOF) {
+			cout << tmpTextureName<<endl;
+			textures_name.push_back(tmpTextureName);
+			cout<<textures_name[count]<<endl;
+			count++;
+		}
+
+		fclose(fp);
+
+		return textures_name;
+	}
+
+
 	/*
 	int setVisible(glm::vec3 campos, glm::vec3 coordinate) {
 		glm::vec3 c(0.7f, 0.7f, 0.7f);
@@ -609,7 +608,7 @@ class MyProject : public BaseProject {
 
 		//QUADRI * N
 		vector<Coordinate> Coordinates = loadCoordinates();
-		for (int i = 0; i < numPictures; i++) {
+		for (int i = 0; i < Coordinates.size(); i++) {
 			ubo.specularAbility = 1;
 			ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
 				* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
@@ -641,7 +640,7 @@ class MyProject : public BaseProject {
 		
 		//qui le ho dichiarate localment anzichè dalla funzione perchè nella funzione le hai hardcodate
 		int vis2 = 0;
-		vector<Coordinate> Coordinates2(numPictures);
+		vector<Coordinate> Coordinates2(8);
 		Coordinates2[0] = Coordinate(0.2f, 1.9f, -0.7f);
 		Coordinates2[1] = Coordinate(-1.8f, 1.9f, -0.7f);
 		Coordinates2[2] = Coordinate(-3.8f, 1.9f, -0.7f);
@@ -652,7 +651,7 @@ class MyProject : public BaseProject {
 		Coordinates2[7] = Coordinate(-5.8f, 1.9f, 2.9f);
 
 		
-		for (int i = 0; i < numPictures; i++) {
+		for (int i = 0; i < 8; i++) {
 			if (visible) {
 				vis2 = enableDesc(CamPos, Coordinates2[i]);
 			}
