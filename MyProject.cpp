@@ -235,6 +235,7 @@ protected:
 		return fpin;
 	}
 
+	//ciao
 
 	vector<Coordinate> loadCoordinates(const string& filePath) {
 		vector<Coordinate> coordinates;
