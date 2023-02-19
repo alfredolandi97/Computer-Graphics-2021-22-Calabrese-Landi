@@ -5,7 +5,9 @@ using namespace std;
 #include "Coordinate.cpp"
 #define FIRST_OBJECTS_SIZE 8
 #define MAX_TEXTURE_NAME_SIZE 50
-
+const std::string t_txt = "resources/Textures.txt";
+const std::string c1_txt = "resources/Coordinates.txt";
+const std::string c2_txt = "resources/Coordinates2.txt";
 const std::string MODEL_PATH = "models/prova1.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro3.obj";
@@ -95,7 +97,16 @@ protected:
 		uniformBlocksInPool = 4 + numd + num;
 		texturesInPool = 3 + numd + num;
 		setsInPool = 4 + numd + num;
+
+		// Make the window resizable
+		
 	}
+
+
+
+	
+
+
 
 	// Here you load and setup all your Vulkan objects
 	void localInit() {
@@ -111,7 +122,6 @@ protected:
 			});
 
 		P1.init(this, "shaders/vert.spv", "shaders/frag.spv", { &DSLGlobal, &DSLObj });
-		loadModels();
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		M1.init(this, MODEL_PATH);
 		T1.init(this, TEXTURE_PATH);
@@ -123,7 +133,7 @@ protected:
 
 		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
 		M2.init(this, MODEL_PATH1);
-		texture_path = loadTextures();
+		texture_path = loadTextures(t_txt);
 		for (int i = 0; i < num; i++) {
 			TPicture[i].init(this, texture_path[i]);
 			DSPicture[i].init(this, &DSLObj, {
@@ -225,47 +235,36 @@ protected:
 		return fpin;
 	}
 
-	vector<Coordinate> loadCoordinates() {
-		vector<Coordinate> Coordinates;
-		Coordinates.reserve(FIRST_OBJECTS_SIZE);
+
+	vector<Coordinate> loadCoordinates(const string& filePath) {
+		vector<Coordinate> coordinates;
+		coordinates.reserve(FIRST_OBJECTS_SIZE);
 		float tmpCoordinates[3];
-		FILE* fp = loadFile("C:\\Users\\HP\\source\\repos\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Coordinates.txt");
+		FILE* fp = loadFile(filePath.c_str());
 		while (!feof(fp)) {
 			fscanf(fp, "%f %f %f", &tmpCoordinates[0], &tmpCoordinates[1], &tmpCoordinates[2]);
-			Coordinates.push_back(Coordinate(tmpCoordinates));
+			coordinates.push_back(Coordinate(tmpCoordinates));
 		}
-
-
 		fclose(fp);
-
-		return Coordinates;
+		return coordinates;
 	}
 
-	vector<string> loadTextures() {
-		vector<string> textures_name;
-		textures_name.reserve(FIRST_OBJECTS_SIZE);
-		FILE* fp = loadFile("C:\\Users\\HP\\source\\repos\\Computer-Graphics-2021-22-Calabrese-Landi\\resources\\Textures.txt");
+	vector<string> loadTextures(const string& filePath) {
+		vector<string> texturesName;
+		texturesName.reserve(FIRST_OBJECTS_SIZE);
+		FILE* fp = loadFile(filePath.c_str());
 		char tmpTextureName[MAX_TEXTURE_NAME_SIZE];
 		int count = 0;
 		while (fscanf(fp, "%s", tmpTextureName) != EOF) {
 			cout << tmpTextureName << endl;
-			textures_name.push_back(tmpTextureName);
-			cout << textures_name[count] << endl;
+			texturesName.push_back(tmpTextureName);
+			cout << texturesName[count] << endl;
 			count++;
 		}
-
 		fclose(fp);
-
-		return textures_name;
+		return texturesName;
 	}
 
-
-	/*
-	int setVisible(glm::vec3 campos, glm::vec3 coordinate) {
-		glm::vec3 c(0.7f, 0.7f, 0.7f);
-		glm::vec3 diff = campos - coordinate;
-		return std::abs(glm::length(diff)) < std::abs(glm::length(c));
-	}*/
 
 	int enableDesc(glm::vec3 campos, Coordinate coordinate) {
 		glm::vec3 c(1.2f, 1.2f, 1.2f);
@@ -323,107 +322,38 @@ protected:
 		return false;
 	}
 	*/
-	/*
-	bool detectCollision(glm::vec3 campos) {
-		const float threshold = 0.1f;
-		const std::vector<float> wallPositionsX = { -6.8f, -4.8f, -2.8f, -0.8f, 1.2f };
-		const std::vector<float> wallPositionsZ = { 3.1f, 1.1f, -0.9f };
 
-		for (float wallPosX : wallPositionsX) {
-			if (std::abs(campos.x - wallPosX) < threshold) {
-				if (std::abs(campos.z - 0.5f) > 0.3f) {
-					std::cout << "POSITION" << campos.x << "," << campos.z << "\n";
-					return true;
-				}
-				
+
+bool isXDoorOpen(glm::vec3 CamPos) {
+	return (CamPos.x <= -5.9339f && CamPos.x >= -6.4339) ||
+		(CamPos.x >= 0.21609f && CamPos.x <= 0.71609f);
+}
+
+bool isZDoorOpen(glm::vec3 CamPos) {
+	return (CamPos.z >= 1.63f && CamPos.z <= 2.13f) ||
+		(CamPos.z >= -0.4114f && CamPos.z <= 0.0866);
+}
+
+bool detectCollision(glm::vec3 campos) {
+	const float threshold = 0.1f;
+	const std::vector<std::vector<float>> wallPositions = {
+		{ -6.9f, -4.9080f, -2.8579f, -0.80891f, 1.2507f },
+		{ 3.1456f, 1.1131f, -0.95383f }
+	};
+
+	for (const auto& positions : wallPositions) {
+		for (float pos : positions) {
+			if (std::abs(campos.x - pos) < threshold && !isZDoorOpen(campos)) {
+				return true;
 			}
-		}
-		
-
-		for (float wallPosZ : wallPositionsZ) {
-			if (std::abs(campos.z - wallPosZ) < threshold) {
-				if (CamPos.z == 1.1f && (std::abs(campos.x - 0.3f) < 0.3f || std::abs(campos.x - 6.1f) < 0.3f)) {
-					std::cout << "POSITION" << campos.x << "," << campos.z << "\n";
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}*/
-
-
-	bool detectCollision(glm::vec3 campos) {
-		const float threshold = 0.1f;
-		const std::vector<float> wallPositionsX = { -6.9f, -4.9080f, -2.8579f, -0.80891f, 1.2507f };
-		const std::vector<float> wallPositionsZ = { 3.1456f, 1.1131f, -0.95383f };
-
-		for (float wallPosX : wallPositionsX) {
-			if (std::abs(campos.x - wallPosX) < threshold) {
-				if(!checkDoorZ(campos))
+			else if (std::abs(campos.z - pos) < threshold && !isXDoorOpen(campos)) {
 				return true;
 			}
 		}
-
-
-		for (float wallPosZ : wallPositionsZ) {
-			if (std::abs(campos.z - wallPosZ) < threshold) {
-				if (!checkDoorX(campos))
-				return true;
-			}
-		}
-			
-		return false;
 	}
 
-
-	bool checkDoorX(glm::vec3 CamPos) {
-		if ((CamPos.x <= -5.9339f && CamPos.x >= -6.4339) || (CamPos.x >= 0.21609f && CamPos.x <= 0.71609f)) {
-			return true;
-		}
-		else return false;
-	}
-
-
-	bool checkDoorZ(glm::vec3 CamPos) {
-		if ((CamPos.z >= 1.63f && CamPos.z <= 2.13f) || (CamPos.z >= -0.4114f && CamPos.z <= 0.0866)) {
-			return true;
-		}
-		else return false;
-
-	}
-
-
-
-
-
-	
-	/*
-	bool detectCollision(const glm::vec3& camPos, const std::vector<Model>& walls, float threshold) {
-		for (const auto& wall : walls) {
-			for (const auto& mesh : wall.getMeshes()) {
-				for (size_t i = 0; i < mesh.indices.size(); i += 3) {
-					const auto& v0 = wall.vertices[mesh.indices[i].vertex_index];
-					const auto& v1 = wall.vertices[mesh.indices[i + 1].vertex_index];
-					const auto& v2 = wall.vertices[mesh.indices[i + 2].vertex_index];
-					glm::vec3 midpoint = (v0.pos + v1.pos + v2.pos) / 3.0f;
-					float distance = glm::distance(camPos, midpoint);
-					if (distance < threshold) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-	*/
-
-
-
-
-
-
-	
+	return false;
+}
 
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
@@ -468,29 +398,8 @@ protected:
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
 			}
-		/*
-		VkBuffer vertexBuffers2[] = { M2.vertexBuffer };
-		VkDeviceSize offsets2[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
-		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
-			VK_INDEX_TYPE_UINT32);
 		
-		vkCmdBindDescriptorSets(commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		P1.pipelineLayout, 1, 1, &DSPicture[0].descriptorSets[currentImage],
-				0, nullptr);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
 
-
-		vkCmdBindDescriptorSets(commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			P1.pipelineLayout, 1, 1, &DSPicture[1].descriptorSets[currentImage],
-			0, nullptr);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
-		*/
-		
 		//TERRAIN
 
 		VkBuffer vertexBuffers3[] = { MTerrain.vertexBuffer };
@@ -554,8 +463,8 @@ protected:
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
 		
-		 bool visible = 0;
-		
+		bool visible = false;
+
 		static auto startTime = std::chrono::high_resolution_clock::now();
 		static float lastTime = 0.0f;
 
@@ -568,7 +477,7 @@ protected:
 		const float ROT_SPEED = glm::radians(60.0f);
 		const float MOVE_SPEED = 1.25f;
 		const float MOUSE_RES = 500.0f;
-		
+
 		static double old_xpos = 0, old_ypos = 0;
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
@@ -602,10 +511,10 @@ protected:
 			CamAng.z += deltaT * ROT_SPEED;
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_U)) {
-			visible = 1;
+		if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+			visible = !visible;
 		}
-		
+
 
 		 CamDir = glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.y, glm::vec3(0.0f, 1.0f, 0.0f))) *
 			glm::mat3(glm::rotate(glm::mat4(1.0f), CamAng.x, glm::vec3(1.0f, 0.0f, 0.0f))) *
@@ -631,13 +540,7 @@ protected:
 		}
 
 		// Detect collision and slide along the wall
-		
-		const std::vector<Model>& walls = { M1 };
-
-		
-
-		
-
+	
 		if (detectCollision(CamPos)) {
 	
 				CamPos = oldCamPos;
@@ -688,11 +591,17 @@ protected:
 		vkUnmapMemory(device, DS1.uniformBuffersMemory[0][currentImage]);
 
 		//QUADRI * N
-		vector<Coordinate> Coordinates = loadCoordinates();
+		vector<Coordinate> Coordinates = loadCoordinates(c1_txt);
 		for (int i = 0; i < Coordinates.size(); i++) {
 			ubo.specularAbility = 1;
-			ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
-				* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
+			if (i <= 3) {
+				ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
+					* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
+			}
+			else {
+				ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
+					* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
+			}
 			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
 				sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
@@ -721,7 +630,8 @@ protected:
 		
 		//qui le ho dichiarate localment anzichè dalla funzione perchè nella funzione le hai hardcodate
 		int vis2 = 0;
-		vector<Coordinate> Coordinates2(8);
+		/*
+		* vector<Coordinate> Coordinates2(8);
 		Coordinates2[0] = Coordinate(0.2f, 1.9f, -0.7f);
 		Coordinates2[1] = Coordinate(-1.8f, 1.9f, -0.7f);
 		Coordinates2[2] = Coordinate(-3.8f, 1.9f, -0.7f);
@@ -730,15 +640,23 @@ protected:
 		Coordinates2[5] = Coordinate(-1.8f, 1.9f, 2.9f);
 		Coordinates2[6] = Coordinate(-3.8f, 1.9f, 2.9f);
 		Coordinates2[7] = Coordinate(-5.8f, 1.9f, 2.9f);
+		*/
 
+		vector<Coordinate> Coordinates2 = loadCoordinates(c2_txt);
 		
 		for (int i = 0; i < 8; i++) {
 			if (visible) {
 				vis2 = enableDesc(CamPos, Coordinates2[i]);
 			}
 			ubo.specularAbility = 0;
-			ubo.model = (glm::translate(glm::mat4(vis2), Coordinates2[i].getPos())
-				* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
+			if (i <= 3) {
+				ubo.model = (glm::translate(glm::mat4(vis2), Coordinates2[i].getPos())
+					* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
+			}
+			else {
+				ubo.model = (glm::translate(glm::mat4(vis2), Coordinates2[i].getPos())
+					* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
+			}
 			vkMapMemory(device, DSDesc[i].uniformBuffersMemory[0][currentImage], 0,
 				sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
