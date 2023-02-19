@@ -1,0 +1,8 @@
+textures/cez.png
+textures/cardesc.png
+textures/bottdesc.png
+textures/oratdesc.png
+textures/vgdesc.png
+textures/tcdesc.png
+textures/dalidesc.png
+textures/mondesc.png

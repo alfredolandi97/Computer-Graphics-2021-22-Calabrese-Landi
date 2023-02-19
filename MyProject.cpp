@@ -5,22 +5,20 @@ using namespace std;
 #include "Coordinate.cpp"
 #define FIRST_OBJECTS_SIZE 8
 #define MAX_TEXTURE_NAME_SIZE 50
-const std::string t_txt = "resources/Textures.txt";
-const std::string c1_txt = "resources/Coordinates.txt";
-const std::string c2_txt = "resources/Coordinates2.txt";
+
 const std::string MODEL_PATH = "models/prova1.obj";
 const std::string TEXTURE_PATH = "textures/walls.jpg";
 const std::string MODEL_PATH1 = "models/quadro3.obj";
-vector<string> texture_path;
+vector<Coordinate> objects_coordinates;
+vector<string> objects_textures_path;
+vector<Coordinate> descriptions_coordinates;
+vector<string> descriptions_textures_path;
 const std::string MODEL_PATHTERRAIN = "models/terrain.obj";
 const std::string TEXTURE_PATHTERRAIN = "textures/terrain.png";
 const std::string MODEL_PATHFLOOR = "models/Floor.obj";
 const std::string TEXTURE_PATHFLOOR = "textures/floor.png";
-const std::string texture_desc[] = { "textures/cez.png", "textures/cardesc.png", "textures/bottdesc.png", "textures/oratdesc.png", "textures/vgdesc.png", "textures/tcdesc.png", "textures/dalidesc.png", "textures/mondesc.png" };
 const std::string skyt_path = "textures/uv.png";
 const std::string skym_path = "models/skybox1.obj";
-const int num = 8;
-const int numd = 8;
 
 // The uniform buffer object used in this example
 struct globalUniformBufferObject {
@@ -30,6 +28,7 @@ struct globalUniformBufferObject {
 	alignas(16) glm::vec3 lightPos[8];
 	alignas(16) glm::vec3 lightColor;
 	alignas(16) glm::vec2 coneInOutDecayExp;
+	alignas(16) glm::vec3 EyePos;
 	alignas(16) glm::vec3 AmbColor;
 	alignas(16) glm::vec3 DzColor;
 	alignas(16) glm::vec3 DyColor;
@@ -39,7 +38,6 @@ struct globalUniformBufferObject {
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
-	alignas(16) float specularAbility;
 };
 
 //Questo commento è per testare GitHub
@@ -65,8 +63,8 @@ protected:
 
 	Model M2;
 	//L'inizializzazione statica DEVE ESSERE CORRETTA, SI DEVE USARE QUELLA DINAMICA
-	Texture TPicture[num];
-	DescriptorSet DSPicture[num]; //instance DSLobj
+	vector<Texture> TPicture;
+	vector<DescriptorSet> DSPicture; //instance DSLobj
 	//per ogni quadro dobbiamo aggiungere un descriptor set e siccome cambia la texture anche la texture
 
 
@@ -78,35 +76,26 @@ protected:
 	Texture TFloor;
 	DescriptorSet DSFloor;
 
-	Texture TDesc[numd];
-	DescriptorSet DSDesc[numd];
-
-	/*Model MSky;
-	Texture TSky;
-	DescriptorSet DSSky;*/
+	vector<Texture> TDesc;
+	vector<DescriptorSet> DSDesc;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
 		// window size, titile and initial background
-		windowWidth = 800;
-		windowHeight = 600;
+		windowWidth = 1200;
+		windowHeight = 800;
 		windowTitle = "My Project";
 		initialBackgroundColor = { 0.68f, 0.8f, 1.0f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 4 + numd + num;
-		texturesInPool = 3 + numd + num;
-		setsInPool = 4 + numd + num;
+		uniformBlocksInPool = 4 + objects_coordinates.size() + descriptions_coordinates.size();
+		cout << 4+objects_coordinates.size() << "\t" << objects_textures_path.size() << "\t" << descriptions_coordinates.size() << "\t" << descriptions_textures_path.size() << "\n";
+		texturesInPool = 3 + objects_textures_path.size() + descriptions_textures_path.size();
+		setsInPool = 4 + objects_coordinates.size() + descriptions_coordinates.size();
 
 		// Make the window resizable
 		
 	}
-
-
-
-	
-
-
 
 	// Here you load and setup all your Vulkan objects
 	void localInit() {
@@ -133,9 +122,10 @@ protected:
 
 		//questo è solo per il primo quadro, M2 è uno, T2 è quanti quadri e DS è quanti quadri
 		M2.init(this, MODEL_PATH1);
-		texture_path = loadTextures(t_txt);
-		for (int i = 0; i < num; i++) {
-			TPicture[i].init(this, texture_path[i]);
+		TPicture.resize(objects_textures_path.size());
+		DSPicture.resize(objects_textures_path.size());
+		for (int i = 0; i < objects_textures_path.size(); i++) {
+			TPicture[i].init(this, objects_textures_path[i]);
 			DSPicture[i].init(this, &DSLObj, {
 						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 						{1, TEXTURE, 0, &TPicture[i]}
@@ -160,25 +150,15 @@ protected:
 			});
 
 		//DESCRIPTION
-
-		for (int i = 0; i < numd; i++) {
-			TDesc[i].init(this, texture_desc[i]);
+		TDesc.resize(descriptions_textures_path.size());
+		DSDesc.resize(descriptions_textures_path.size());
+		for (int i = 0; i < descriptions_textures_path.size(); i++) {
+			TDesc[i].init(this, descriptions_textures_path[i]);
 			DSDesc[i].init(this, &DSLObj, {
 						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
 						{1, TEXTURE, 0, &TDesc[i]}
 				});
 		}
-
-
-
-		/*	MSky.init(this, skym_path);
-			TSky.init(this, skyt_path);
-			/*DSSky.init(this, &DSLObj, {
-
-						{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
-						{1, TEXTURE, 0, &TSky}
-				});*/
-
 
 		DSGlobal.init(this, &DSLGlobal, {
 					{0, UNIFORM, sizeof(globalUniformBufferObject), nullptr}
@@ -198,7 +178,7 @@ protected:
 		T1.cleanup();
 		M1.cleanup();
 
-		for (int i = 0; i < num; i++) {
+		for (int i = 0; i < TPicture.size(); i++) {
 			TPicture[i].cleanup();
 			DSPicture[i].cleanup();
 		}
@@ -211,61 +191,11 @@ protected:
 		DSFloor.cleanup();
 		TFloor.cleanup();
 		MFloor.cleanup();
-		for (int i = 0; i < numd; i++) {
+		for (int i = 0; i < TDesc.size(); i++) {
 			DSDesc[i].cleanup();
 			TDesc[i].cleanup();
 		}
-
-		/*MSky.cleanup();
-		TSky.cleanup();
-		DSSky.cleanup();*/
-
-
-
 	}
-
-	FILE* loadFile(const char* filename) {
-		FILE* fpin;
-		fopen_s(&fpin, filename, "r");
-		if (!fpin) {
-			cout << "Errore, impossibile aprire il file: " << filename << endl;
-			return NULL;
-		}
-
-		return fpin;
-	}
-
-	//ciao
-
-	vector<Coordinate> loadCoordinates(const string& filePath) {
-		vector<Coordinate> coordinates;
-		coordinates.reserve(FIRST_OBJECTS_SIZE);
-		float tmpCoordinates[3];
-		FILE* fp = loadFile(filePath.c_str());
-		while (!feof(fp)) {
-			fscanf(fp, "%f %f %f", &tmpCoordinates[0], &tmpCoordinates[1], &tmpCoordinates[2]);
-			coordinates.push_back(Coordinate(tmpCoordinates));
-		}
-		fclose(fp);
-		return coordinates;
-	}
-
-	vector<string> loadTextures(const string& filePath) {
-		vector<string> texturesName;
-		texturesName.reserve(FIRST_OBJECTS_SIZE);
-		FILE* fp = loadFile(filePath.c_str());
-		char tmpTextureName[MAX_TEXTURE_NAME_SIZE];
-		int count = 0;
-		while (fscanf(fp, "%s", tmpTextureName) != EOF) {
-			cout << tmpTextureName << endl;
-			texturesName.push_back(tmpTextureName);
-			cout << texturesName[count] << endl;
-			count++;
-		}
-		fclose(fp);
-		return texturesName;
-	}
-
 
 	int enableDesc(glm::vec3 campos, Coordinate coordinate) {
 		glm::vec3 c(1.2f, 1.2f, 1.2f);
@@ -273,56 +203,6 @@ protected:
 		if (glm::length(diff) < glm::length(c))
 			return 1;
 	}
-	/*
-	bool detectCollision(const glm::vec3& camPos, const std::vector<Model>& walls, float threshold) {
-		for (const auto& wall : walls) {
-			for (const auto& mesh : wall.getMeshes()) {
-				for (size_t i = 0; i < mesh.indices.size(); i += 3) {
-
-					if (CamPos.z > 0.21f && CamPos.z < 0.71 && CamPos.x>1.2f && CamPos.x < 1.3f) {
-						return true;
-					}
-					const auto& v0 = wall.vertices[mesh.indices[i].vertex_index];
-					const auto& v1 = wall.vertices[mesh.indices[i + 1].vertex_index];
-					const auto& v2 = wall.vertices[mesh.indices[i + 2].vertex_index];
-
-					const glm::vec3 edge1 = v1.pos - v0.pos;
-					const glm::vec3 edge2 = v2.pos - v0.pos;
-					const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
-
-					// Compute the projection of the camera position onto the wall plane.
-					const float d = glm::dot(normal, v0.pos);
-					const glm::vec3 projectedCamPos = camPos - (glm::dot(normal, camPos) - d) * normal;
-
-					// Check if the projected camera position is inside the triangle.
-					const glm::vec3 v0p = projectedCamPos - v0.pos;
-					const glm::vec3 v1p = projectedCamPos - v1.pos;
-					const glm::vec3 v2p = projectedCamPos - v2.pos;
-					const float dot00 = glm::dot(v0p, v0p);
-					const float dot01 = glm::dot(v0p, v1p);
-					const float dot02 = glm::dot(v0p, v2p);
-					const float dot11 = glm::dot(v1p, v1p);
-					const float dot12 = glm::dot(v1p, v2p);
-					const float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
-					const float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-					const float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-					if (u >= 0.0f && v >= 0.0f && u + v <= 1.0f) {
-						// The projected camera position is inside the triangle, so a collision has occurred.
-						const float distToWall = glm::distance(projectedCamPos, camPos);
-						if (distToWall < threshold) {
-							return true;
-						}
-					}
-				}
-
-
-			}
-		}
-
-		return false;
-	}
-	*/
 
 
 bool isXDoorOpen(glm::vec3 CamPos) {
@@ -390,7 +270,7 @@ bool detectCollision(glm::vec3 campos) {
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
 			vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
 				VK_INDEX_TYPE_UINT32);
-			for (int i = 0; i < num; i++) {
+			for (int i = 0; i < DSPicture.size(); i++) {
 				
 				vkCmdBindDescriptorSets(commandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -434,7 +314,7 @@ bool detectCollision(glm::vec3 campos) {
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers5, offsets5);
 		vkCmdBindIndexBuffer(commandBuffer, M2.indexBuffer, 0,
 			VK_INDEX_TYPE_UINT32);
-		for (int i = 0; i < numd; i++) {
+		for (int i = 0; i <DSDesc.size(); i++) {
 			
 			vkCmdBindDescriptorSets(commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -443,22 +323,9 @@ bool detectCollision(glm::vec3 campos) {
 			vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(M2.indices.size()), 1, 0, 0, 0);
 		}
-
-
-		/*VkBuffer vertexBuffers6[] = {MSky.vertexBuffer};
-		VkDeviceSize offsets6[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers6, offsets6);
-		vkCmdBindIndexBuffer(commandBuffer, MFloor.indexBuffer, 0,
-			VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			P1.pipelineLayout, 1, 1, &DSSky.descriptorSets[currentImage],
-			0, nullptr);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MSky.indices.size()), 1, 0, 0, 0);*/
 	}
 	glm::mat3 CamDir = glm::mat3(1.0f);
-	glm::vec3 CamPos = glm::vec3(0.0, 1.5f, 0.0f);
+	glm::vec3 CamPos = glm::vec3(0.0, 1.7f, 0.0f);
 	glm::vec3 CamAng = glm::vec3(0.0f, 0.0f, 0.0f);
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
@@ -485,8 +352,6 @@ bool detectCollision(glm::vec3 campos) {
 		double m_dx = xpos - old_xpos;
 		double m_dy = ypos - old_ypos;
 		old_xpos = xpos; old_ypos = ypos;
-		const float angqd = glm::radians(270.0f);
-		const float angqs = glm::radians(90.0f);
 		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 			CamAng.y += m_dx * ROT_SPEED / MOUSE_RES;
@@ -559,20 +424,17 @@ bool detectCollision(glm::vec3 campos) {
 			swapChainExtent.width / (float)swapChainExtent.height,
 			0.1f, 50.0f);;
 		gubo.proj[1][1] *= -1;
-		gubo.lightPos[0] = glm::vec3(0.2f, 3.0f, -0.4f); //point lights
-		gubo.lightPos[1] = glm::vec3(-1.8f, 3.0f, -0.4f);
-		gubo.lightPos[2] = glm::vec3(-3.8f, 3.0f, -0.4f);
-		gubo.lightPos[3] = glm::vec3(-5.8f, 3.0f, -0.4f);
-		gubo.lightPos[4] = glm::vec3(0.2f, 3.0f, 2.6f);
-		gubo.lightPos[5] = glm::vec3(-1.8f, 3.0f, 2.6f);
-		gubo.lightPos[6] = glm::vec3(-3.8f, 3.0f, 2.6f);
-		gubo.lightPos[7] = glm::vec3(-5.8f, 3.0f, 2.6f);
+		gubo.lightPos[0] = glm::vec3(0.2f, 2.9f, -0.1f); //point lights
+		gubo.lightPos[1] = glm::vec3(-1.8f, 2.9f, -0.1f);
+		gubo.lightPos[2] = glm::vec3(-3.8f, 2.9f, -0.1f);
+		gubo.lightPos[3] = glm::vec3(-5.8f, 2.9f, -0.1f);
+		gubo.lightPos[4] = glm::vec3(0.2f, 2.9f, 2.3f);
+		gubo.lightPos[5] = glm::vec3(-1.8f, 2.9f, 2.3f);
+		gubo.lightPos[6] = glm::vec3(-3.8f, 2.9f, 2.3f);
+		gubo.lightPos[7] = glm::vec3(-5.8f, 2.9f, 2.3f);
 		gubo.lightColor = glm::vec3(1.0f, 0.96f, 0.934f);
 		gubo.coneInOutDecayExp = glm::vec2(0.5f, 1.5f);
-		gubo.AmbColor = glm::vec3(0.5f,0.5f,0.5f);
-		gubo.DzColor = glm::vec3(0.1f, 0.15f, 0.1f);
-		gubo.DyColor = glm::vec3(0.1f, 0.15f, 0.1f);
-		gubo.DxColor = glm::vec3(0.1f, 0.15f, 0.1f);
+		gubo.EyePos = CamPos;
 
 		vkMapMemory(device, DSGlobal.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(gubo), 0, &data);
@@ -584,7 +446,6 @@ bool detectCollision(glm::vec3 campos) {
 		
 
 		//MUSEO
-		ubo.specularAbility = 1;
 		ubo.model = glm::mat4(1.0f); 
 		vkMapMemory(device, DS1.uniformBuffersMemory[0][currentImage], 0,
 							sizeof(ubo), 0, &data);
@@ -592,17 +453,9 @@ bool detectCollision(glm::vec3 campos) {
 		vkUnmapMemory(device, DS1.uniformBuffersMemory[0][currentImage]);
 
 		//QUADRI * N
-		vector<Coordinate> Coordinates = loadCoordinates(c1_txt);
-		for (int i = 0; i < Coordinates.size(); i++) {
-			ubo.specularAbility = 1;
-			if (i <= 3) {
-				ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
-					* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-			}
-			else {
-				ubo.model = (glm::translate(glm::mat4(1.0f), Coordinates[i].getPos())
-					* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
-			}
+		for (int i = 0; i < objects_coordinates.size(); i++) {
+			ubo.model = (glm::translate(glm::mat4(1.0f), objects_coordinates[i].getPos())
+					* glm::rotate(glm::mat4(1.0f), objects_coordinates[i].getAngle(), glm::vec3(0, 1, 0)));
 			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
 				sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
@@ -614,7 +467,6 @@ bool detectCollision(glm::vec3 campos) {
 		
 		
 		//TERRAIN
-		ubo.specularAbility = 1;
 		ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.9f, 0.0f));
 		vkMapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -622,7 +474,6 @@ bool detectCollision(glm::vec3 campos) {
 		vkUnmapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage]);
 
 		//FLOOR
-		ubo.specularAbility = 1;
 		ubo.model = glm::mat4(1.0f);
 		vkMapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
@@ -631,33 +482,13 @@ bool detectCollision(glm::vec3 campos) {
 		
 		//qui le ho dichiarate localment anzichè dalla funzione perchè nella funzione le hai hardcodate
 		int vis2 = 0;
-		/*
-		* vector<Coordinate> Coordinates2(8);
-		Coordinates2[0] = Coordinate(0.2f, 1.9f, -0.7f);
-		Coordinates2[1] = Coordinate(-1.8f, 1.9f, -0.7f);
-		Coordinates2[2] = Coordinate(-3.8f, 1.9f, -0.7f);
-		Coordinates2[3] = Coordinate(-5.8f, 1.9f, -0.7f);
-		Coordinates2[4] = Coordinate(0.2f, 1.9f, 2.9f);
-		Coordinates2[5] = Coordinate(-1.8f, 1.9f, 2.9f);
-		Coordinates2[6] = Coordinate(-3.8f, 1.9f, 2.9f);
-		Coordinates2[7] = Coordinate(-5.8f, 1.9f, 2.9f);
-		*/
-
-		vector<Coordinate> Coordinates2 = loadCoordinates(c2_txt);
 		
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < descriptions_coordinates.size(); i++) {
 			if (visible) {
-				vis2 = enableDesc(CamPos, Coordinates2[i]);
+				vis2 = enableDesc(CamPos, descriptions_coordinates[i]);
 			}
-			ubo.specularAbility = 0;
-			if (i <= 3) {
-				ubo.model = (glm::translate(glm::mat4(vis2), Coordinates2[i].getPos())
-					* glm::rotate(glm::mat4(1.0f), angqd, glm::vec3(0, 1, 0)));
-			}
-			else {
-				ubo.model = (glm::translate(glm::mat4(vis2), Coordinates2[i].getPos())
-					* glm::rotate(glm::mat4(1.0f), angqs, glm::vec3(0, 1, 0)));
-			}
+			ubo.model = (glm::translate(glm::mat4(vis2), descriptions_coordinates[i].getPos())
+					* glm::rotate(glm::mat4(1.0f), descriptions_coordinates[i].getAngle(), glm::vec3(0, 1, 0)));
 			vkMapMemory(device, DSDesc[i].uniformBuffersMemory[0][currentImage], 0,
 				sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
@@ -668,10 +499,52 @@ bool detectCollision(glm::vec3 campos) {
 	}	
 };
 
+FILE* loadFile(const char* filename) {
+	FILE* fpin;
+	fopen_s(&fpin, filename, "r");
+	if (!fpin) {
+		cout << "Errore, impossibile aprire il file: " << filename << endl;
+		return NULL;
+	}
+
+	return fpin;
+}
+
+vector<Coordinate> loadCoordinates(const char* filePath) {
+	vector<Coordinate> coordinates;
+	coordinates.reserve(FIRST_OBJECTS_SIZE);
+	float tmpCoordinates[3], tmpAngle;
+	FILE* fp = loadFile(filePath);
+	while (!feof(fp)) {
+		fscanf(fp, "%f %f %f %f", &tmpCoordinates[0], &tmpCoordinates[1], &tmpCoordinates[2], &tmpAngle);
+		coordinates.push_back(Coordinate(tmpCoordinates, tmpAngle));
+	}
+	fclose(fp);
+	return coordinates;
+}
+
+vector<string> loadTextures(const char* filePath) {
+	vector<string> texturesName;
+	texturesName.reserve(FIRST_OBJECTS_SIZE);
+	FILE* fp = loadFile(filePath);
+	char tmpTextureName[MAX_TEXTURE_NAME_SIZE];
+	int count = 0;
+	while (fscanf(fp, "%s", tmpTextureName) != EOF) {
+		texturesName.push_back(tmpTextureName);
+		count++;
+	}
+	fclose(fp);
+	return texturesName;
+}
+
 // This is the main: probably you do not need to touch this!
 int main() {
+	objects_coordinates = loadCoordinates("resources/Coordinates.txt");
+	objects_textures_path = loadTextures("resources/Textures.txt");
+	descriptions_coordinates = loadCoordinates("resources/Coordinates2.txt");
+	descriptions_textures_path = loadTextures("resources/Textures2.txt");
     MyProject app;
-
+	
     try {
         app.run();
     } catch (const std::exception& e) {
