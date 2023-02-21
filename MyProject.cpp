@@ -38,6 +38,7 @@ struct globalUniformBufferObject {
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
+	alignas(16) float specularAbility;
 };
 
 //Questo commento è per testare GitHub
@@ -263,8 +264,7 @@ bool detectCollision(glm::vec3 campos) {
 					static_cast<uint32_t>(M1.indices.size()), 1, 0, 0, 0);
 
 
-		//QUADRO 
-		
+		//QUADRO
 			VkBuffer vertexBuffers2[] = { M2.vertexBuffer };
 			VkDeviceSize offsets2[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers2, offsets2);
@@ -447,6 +447,7 @@ bool detectCollision(glm::vec3 campos) {
 
 		//MUSEO
 		ubo.model = glm::mat4(1.0f); 
+		ubo.specularAbility = 1;
 		vkMapMemory(device, DS1.uniformBuffersMemory[0][currentImage], 0,
 							sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
@@ -456,6 +457,7 @@ bool detectCollision(glm::vec3 campos) {
 		for (int i = 0; i < objects_coordinates.size(); i++) {
 			ubo.model = (glm::translate(glm::mat4(1.0f), objects_coordinates[i].getPos())
 					* glm::rotate(glm::mat4(1.0f), objects_coordinates[i].getAngle(), glm::vec3(0, 1, 0)));
+			ubo.specularAbility = 1;
 			vkMapMemory(device, DSPicture[i].uniformBuffersMemory[0][currentImage], 0,
 				sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
@@ -468,6 +470,7 @@ bool detectCollision(glm::vec3 campos) {
 		
 		//TERRAIN
 		ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.9f, 0.0f));
+		ubo.specularAbility = 1;
 		vkMapMemory(device, DSTerrain.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
@@ -475,6 +478,7 @@ bool detectCollision(glm::vec3 campos) {
 
 		//FLOOR
 		ubo.model = glm::mat4(1.0f);
+		ubo.specularAbility = 1;
 		vkMapMemory(device, DSFloor.uniformBuffersMemory[0][currentImage], 0,
 			sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
@@ -489,6 +493,7 @@ bool detectCollision(glm::vec3 campos) {
 			}
 			ubo.model = (glm::translate(glm::mat4(vis2), descriptions_coordinates[i].getPos())
 					* glm::rotate(glm::mat4(1.0f), descriptions_coordinates[i].getAngle(), glm::vec3(0, 1, 0)));
+			ubo.specularAbility = 0;
 			vkMapMemory(device, DSDesc[i].uniformBuffersMemory[0][currentImage], 0,
 				sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));

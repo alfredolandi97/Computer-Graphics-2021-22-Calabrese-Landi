@@ -11,6 +11,7 @@ layout(set = 0, binding = 0) uniform globalUniformBufferObject {
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 model;
+	float specularAbility;
 } ubo;
 
 layout(set=1, binding = 1) uniform sampler2D texSampler;
@@ -37,9 +38,12 @@ vec3 Lambert_Diffuse_BRDF(vec3 L, vec3 N, vec3 C) {
 }
 
 vec3 Phong_Specular_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float gamma)  {
-	vec3 rlx = -reflect(L, N);
-	
-	return C*pow(clamp(dot(rlx, V), 0, 1), gamma);
+	if(ubo.specularAbility == 1){
+		vec3 rlx = -reflect(L, N);
+		return C*pow(clamp(dot(rlx, V), 0, 1), gamma);
+	}else{
+		return vec3(0.0f,0.0f,0.0f);
+	}
 }
 
 vec3 AmbientLightning(vec3 N, vec3 diffColor){
